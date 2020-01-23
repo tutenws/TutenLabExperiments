@@ -43,6 +43,7 @@ expParams.GratingOscillationFrequency_Hz = GetWithDefault('OscillationFrequency 
 %participant responses preceed each presentation
 %click before each presentation
 %problem: changing the frequency does not seem to be changing the oscillation frequency
+%tototototot
 
 %% Next, initiate Psychtoolbox window
 
