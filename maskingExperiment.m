@@ -44,8 +44,8 @@ expParams.GratingOscillationFrequency_Hz = GetWithDefault('OscillationFrequency 
 ScreenID = max(Screen('Screens')); %the largest number will be the screen that the stim is drawn to
   
  %WHICH SCREEN TO DRAW ON
- [win]=Screen('OpenWindow',ScreenID); %window fills screen
- %[win]=Screen('OpenWindow',ScreenID,[],[0 0 1000 1000]); 
+ %[win]=Screen('OpenWindow',ScreenID); %window fills screen
+ [win]=Screen('OpenWindow',ScreenID,[],[0 0 1000 1000]); 
  
 %WINDOW DIMENTION IN PX 
 [expParams.winXpx, expParams.winYpx]=Screen('WindowSize',ScreenID);
@@ -60,7 +60,9 @@ expParams.SurroundH_dg=expParams.winYpx./expParams.displayPixelsPerDegree;
 %% Stimulus & Experiment Variables
 
 %TRIALS
-expParams.TrialsPerCond = 40;
+expParams.TrialsPerCond = 40; %the number of staircases we do per condition
+%**Not sure what this numb should be (bellow)
+expParams.RespInStaircase = 10; %the number of responses allowed per staircase
 expParams.NumbOfCond = 5;
 TotalTrials = expParams.NumbOfCond.*expParams.TrialsPerCond;
 
@@ -82,6 +84,7 @@ FixLineWidth_px = 2;
 FixLineLeangth_px = 100;
 FixLinePos1_px = CircDiam_px./2;
 FixLinePos2_px = (CircDiam_px./2)-FixLineLeangth_px;
+FixLineRGB = [0,0,0];
 %determine coordinates of the fixation lines
 xCoords = [-FixLinePos1_px,-FixLinePos2_px,0,0,FixLinePos1_px,FixLinePos2_px,0,0];
 yCoords = [0,0,FixLinePos1_px,FixLinePos2_px,0,0,-FixLinePos1_px,-FixLinePos2_px];
@@ -195,7 +198,7 @@ while CircAdjustLoop == 0 %adjusting the circle
     Screen('FillOval',win,CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
     
     %DRAW FIXATION LINES
-    Screen('DrawLines',win,AllCoords,FixLineWidth_px,[0,0,0],[Xpos,Ypos]);
+    Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
     
     %INSTRUCTIONS
     DrawFormattedText(win,'Use buttons Y,B,X, and A to center the circle',(Xpos-(CircDiam_px./2)+20),(Ypos-60),[],[],[],1);
@@ -256,6 +259,7 @@ end
 
 %RECALCULATE CENTERED CIRCLE
 CircPos = CenterRectOnPointd([0, 0, CircDiam_px, CircDiam_px],Xpos,Ypos); %centers the circle on a point
+    %have to recaclulate these to get the most recent circle position
 %RECALCULATE CENTER OF TEST SPOT
 TestSpotPos = CenterRectOnPointd([0, 0, TestSpotDiam_px, TestSpotDiam_px],Xpos,Ypos); %centers the test spot with the circle
 
@@ -285,9 +289,10 @@ dat.RandTrialOrder = TrialArray(randperm(length(TrialArray))); %shuffels numbers
 
 
 %STAIRCASE
-StairFunc = QuestCreate(expParams.Staircase.ThresholdGuess,expParams.Staircase.ThresholdGuessSD,expParams.Staircase.pThreshold, ...
+StairFunc_OG = QuestCreate(expParams.Staircase.ThresholdGuess,expParams.Staircase.ThresholdGuessSD,expParams.Staircase.pThreshold, ...
               expParams.Staircase.Beta,expParams.Staircase.Delta,expParams.Staircase.Gamma,expParams.Staircase.Grain,...
               expParams.Staircase.Range);
+StairFunc = StairFunc_OG; %allows the each staircase to start new without having to make the staircase over again.
           
 %% Experimental loop
 
@@ -325,28 +330,25 @@ end
 
 
 %EXPERIMENT LOOP
-ExptLoop = 0; 
-TrialCounter = 0; %first condition
+ExptLoop = 1; 
 FirstLoop = 0;
-while ExptLoop == 0
+TrialCounter =0;
+while ExptLoop == 1
     
     %DETERMINE NEXT CONDITION TYPE
-    TrialCounter = TrialCounter + 1; %determines the number of trials we have run
+    TrialCounter = TrialCounter + 1; %counts how many conditions we have done
     CondType = dat.RandTrialOrder(TrialCounter); %goes through the random condition array to choose the next condition type
 
+    %RESET STIARCASE
+    StairFunc = StairFunc_OG; %allows the each staircase to start new without having to make the staircase over again.
+    
     %OTHER VARIABLES
     InitiateNextTrial = 0; %used to draw grey intitiate trial screen
     
     %%%%***REMOVE LEATER%%  
-    CondType = 1;
-    expParams.TrialsPerCond = 5;
+    CondType = 2;
+    expParams.RespInStaircase = 1;
     %%%%%%%%%%
-    
-%     %GREY INTITIATION SCREEN - Subj initiates next trial
-%     %the grey screen should be after each staircase so it should really be
-%     %within the individual conditions
-%     if FirstLoop = 1; %after the first trial
-%     end
     
 
     
@@ -355,37 +357,48 @@ while ExptLoop == 0
 
 %TIME VARIABLES
 if CondType == 1
-    
-    %TRIAL LOOP
-    for CurrentTrial = 1:expParams.TrialsPerCond+1
         
+    %STAIRCASE LOOP
+    for CurrentStep = 1:expParams.RespInStaircase+1 
+                
         %DETERMINE TEST SPOT LUMINANCE
         SpotLum_logU = QuestMean(StairFunc); %still in log units
         SpotLumVal = ((10^(QuestMean(StairFunc))).*255)+CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
         %the luminance of the suround circle is added to the spot lum which it will be presented on
         SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
         
-        %STIMULUS PRESENTATION
+        
         StartStim = GetSecs;
         TimeNow = StartStim;
+        %STIMULUS PRESENTATION
         while TimeNow - StartStim < expParams.TrialDuration_s %within trial duration
             
             %DRAW GREY RECTANGLE
             Screen('FillRect',win,[128,128,128]); %grey background
             
+            %DRAW FIXATION LINES
+            Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
+            
             Screen('Flip', win);
             
-            %PRESENT TEST SPOT
             TimeNow = GetSecs;
-            while TimeNow < (StartStim + expParams.PreTestSpotDur_s + expParams.TestSpotDur_s) &&  TimeNow > (StartStim + expParams.PreTestSpotDur_s)
+            
+            %PRESENT TEST SPOT
+            %while TimeNow < (StartStim + expParams.PreTestSpotDur_s + expParams.TestSpotDur_s) &&  TimeNow > (StartStim + expParams.PreTestSpotDur_s)
+            while TimeNow > (StartStim + expParams.PreTestSpotDur_s) && TimeNow < (StartStim + expParams.PreTestSpotDur_s + expParams.TestSpotDur_s)
                 
                 %DRAW GREY RECTANGLE
                 Screen('FillRect',win,[128,128,128]); %grey background
+                
+                %DRAW FIXATION LINES
+                Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
                 
                 %DRAW TEST SPOT
                 Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
                 
                 Screen('Flip', win);
+                
+                TimeNow = GetSecs;
                 
             end %test spot presentation
         end %trial duration
@@ -402,6 +415,8 @@ if CondType == 1
             DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"','center','center',[],[],[],1);
             %1 - flips text across the horizontal axis so text looks right side up when projected to eye
             
+            Screen('Flip', win);
+            
             %BUTTON PRESS CHECK
             GamePad = GamePadInput([]);
             if GamePad.buttonChange == 1 %Game pad button press check
@@ -412,66 +427,190 @@ if CondType == 1
                     %1 - subject saw the stimulus
                     
                     %SAVE LUMINANCE
-                    LumRec(1,CurrentTrial) = SpotLum;
-                    LumRec_logU(1,CurrentTrial) = SpotLum_logU;
+                    dat.LumRec(1,CurrentStep) = SpotLumVal;
+                    dat.LumRec_logU(1,CurrentStep) = SpotLum_logU;
                     RespLoop = 0; %end loop
                     InitiateNextTrial = 1;
                 end
                 if GamePad.buttonA == 1 %subject did not see the stimulus
                     
                     %UPDATE STAIRCASE
+                    StairFunc = QuestUpdate(StairFunc,SpotLum_logU,0); %updates the stair case
+                    %1 - subject saw the stimulus
+                    
+                    %SAVE LUMINANCE
+                    dat.LumRec(1,CurrentStep) = SpotLumVal;
+                    dat.LumRec_logU(1,CurrentStep) = SpotLum_logU;
+                    RespLoop = 0; %end resp loop
+                    InitiateNextTrial = 1; %initates a grey screen and next trial
+                end
+                
+                %GREY SCREEN BEFORE NEXT TRIAL
+                if InitiateNextTrial == 1 %grey screen before next trial
+                    %DRAW GREY RECTANGLE
+                    Screen('FillRect',win,[128,128,128]); %grey background
+                    
+                    %DRAW TEXT
+                    DrawFormattedText(win,'Press any button to continue to the next trial','center','center',[],[],[],1);
+                    %1 - flips text across the horizontal axis so text looks right side up when projected to eye
+                    
+                    Screen('DrawingFinished',win);
+                    Screen('Flip',win);
+                    
+                    %GAME PAD CHECK
+                    GamePad = GamePadInput([]); %checks game pad
+                    if GamePad.buttonChange == 1 %any button pressed
+                        InitiateNextTrial = 0; %end initiate trial loop
+                    end
+                end %grey screen
+            end%button press check
+        end %response loop
+        
+    end %staircase loop
+   
+    %**How do we know when the staircase has ended?
+    
+     CondType = 0; %end condition loop
+end %Grey Field Cond
+
+%%%%%%%%%%%%%%%%%%%%%%%%% GRATING NO FLICKER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%TO DO 
+%add the gratings in with the oval use "Grating_Crop1"
+
+
+if CondType == 2 %Grating No Flicker
+    
+    %STAIRCASE LOOP
+    for CurrentStep = 1:expParams.RespInStaircase+1 
+                
+        %DETERMINE TEST SPOT LUMINANCE
+        SpotLum_logU = QuestMean(StairFunc); %still in log units
+        SpotLumVal = ((10^(QuestMean(StairFunc))).*255)+CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
+        %the luminance of the suround circle is added to the spot lum which it will be presented on
+        SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
+        
+        StartStim = GetSecs;
+        TimeNow = StartStim;
+        %STIMULUS PRESENTATION
+        while TimeNow - StartStim < expParams.TrialDuration_s %within trial duration
+            
+            %DRAW BAR SERIES 1
+            Grating_Txt1 = Screen('MakeTexture',win,Grating_Crop1);
+            Screen('DrawTexture',win,Grating_Txt1);
+            
+            %DRAW CIRCLE
+            Screen('FillOval',win,CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
+            
+            %DRAW FIXATION LINES
+            Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
+            
+            Screen('Flip', win);
+            
+            TimeNow = GetSecs;
+            
+            %PRESENT TEST SPOT
+            while TimeNow > (StartStim + expParams.PreTestSpotDur_s) && TimeNow < (StartStim + expParams.PreTestSpotDur_s + expParams.TestSpotDur_s)
+                
+                %DRAW GRATING
+                Screen('DrawTexture',win,Grating_Txt1);
+                
+                %DRAW CIRCLE
+                Screen('FillOval',win,CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
+                
+                %DRAW FIXATION LINES
+                Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
+                
+                %DRAW TEST SPOT
+                Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
+                
+                Screen('Flip', win);
+                
+                TimeNow = GetSecs;
+                
+            end %test spot presentation
+        end %trial duration
+        
+        
+        %RESPONSE LOOP - subj indicates if they saw the test spot
+        RespLoop = 1;
+        while RespLoop == 1
+            
+            %DRAW GREY RECTANGLE
+            Screen('FillRect',win,[128,128,128]); %grey background
+            
+            %DRAW TEXT
+            DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"','center','center',[],[],[],1);
+            %1 - flips text across the horizontal axis so text looks right side up when projected to eye
+            
+            Screen('Flip', win);
+            
+            %BUTTON PRESS CHECK
+            GamePad = GamePadInput([]);
+            if GamePad.buttonChange == 1 %Game pad button press check
+                if GamePad.buttonY == 1 %subject saw the stimulus
+                    
+                    %UPDATE STAIRCASE
                     StairFunc = QuestUpdate(StairFunc,SpotLum_logU,1); %updates the stair case
                     %1 - subject saw the stimulus
                     
                     %SAVE LUMINANCE
-                    LumRec(1,CurrentTrial) = SpotLum;
-                    LumRec_logU(1,CurrentTrial) = SpotLum_logU;
+                    dat.LumRec(1,CurrentStep) = SpotLumVal;
+                    dat.LumRec_logU(1,CurrentStep) = SpotLum_logU;
+                    RespLoop = 0; %end loop
+                    InitiateNextTrial = 1;
+                end
+                if GamePad.buttonA == 1 %subject did not see the stimulus
+                    
+                    %UPDATE STAIRCASE
+                    StairFunc = QuestUpdate(StairFunc,SpotLum_logU,0); %updates the stair case
+                    %1 - subject saw the stimulus
+                    
+                    %SAVE LUMINANCE
+                    dat.LumRec(1,CurrentStep) = SpotLumVal;
+                    dat.LumRec_logU(1,CurrentStep) = SpotLum_logU;
                     RespLoop = 0; %end resp loop
                     InitiateNextTrial = 1; %initates a grey screen and next trial
                 end
-            end
-            
-            %GREY SCREEN BEFORE NEXT TRIAL
-            if InitiateNextTrial == 1 %grey screen before next trial
-                %DRAW GREY RECTANGLE
-                Screen('FillRect',win,[128,128,128]); %grey background
                 
-                %DRAW TEXT
-                DrawFormattedText(win,'Press any button to continue to the next trial','center','center',[],[],[],1);
-                %1 - flips text across the horizontal axis so text looks right side up when projected to eye
-                
-                Screen('DrawingFinished',win);
-                Screen('Flip',win);
-                
-                %GAME PAD CHECK
-                GamePad = GamePadInput([]); %checks game pad
-                if GamePad.buttonChange == 1 %any button pressed
-                    InitiateNextTrial = 0; %end initiate trial loop
-                end
-                
-            end
+                %GREY SCREEN BEFORE NEXT TRIAL
+                if InitiateNextTrial == 1 %grey screen before next trial
+                    %DRAW GREY RECTANGLE
+                    Screen('FillRect',win,[128,128,128]); %grey background
+                    
+                    %DRAW TEXT
+                    DrawFormattedText(win,'Press any button to continue to the next trial','center','center',[],[],[],1);
+                    %1 - flips text across the horizontal axis so text looks right side up when projected to eye
+                    
+                    Screen('DrawingFinished',win);
+                    Screen('Flip',win);
+                    
+                    %GAME PAD CHECK
+                    GamePad = GamePadInput([]); %checks game pad
+                    if GamePad.buttonChange == 1 %any button pressed
+                        InitiateNextTrial = 0; %end initiate trial loop
+                    end
+                end %grey screen
+            end%button press check
         end %response loop
-    end %trial loop
+        
+    end %staircase loop
+   
     
     
-    %How do we know when the staircase has ended?
-    
-    % CondType = 0; %end condition loop
-end %Grey Field Cond
-
-
+    CondType = 0; %end condition loop
+end %Grating No Flicker
 
 
 % %%%%%%%%%%%%%%% THESE ARE THE NEXT CONDITIONS %%%%%%%%%%%%5
 % 
-% if CondType == 2 %Grating No Flicker
-% end %Grating No Flicker
 % if CondType == 3 %Grating Flicker 4Hz
 % end
 % if CondType == 4 %Grating Flicker 10Hz
 % end
 % if CondType == 5 %Grating Flicker 15Hz
 % end
+ExptLoop = 0;
  end %Experiment Loop
 
 
@@ -498,7 +637,7 @@ end %Grey Field Cond
 %     Screen('FillOval',win,CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
 %     
 %     %DRAW FIXATION CROSS
-%     Screen('DrawLines',win,AllCoords,FixLineWidth_px,[0,0,0],[Xpos,Ypos]);
+%     Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
 %     
 %     Screen('Flip', win);
 %     
@@ -521,7 +660,7 @@ end %Grey Field Cond
 %     %the circle is drawn in a box of the width and height of the circle
 %     
 %     %DRAW FIXATION CROSS
-%     Screen('DrawLines',win,AllCoords,FixLineWidth_px,[0,0,0],[Xpos,Ypos]);
+%     Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
 %     
 %     Screen('Flip', win);
 %     
