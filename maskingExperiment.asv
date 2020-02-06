@@ -41,7 +41,7 @@ expParams.GratingOscillationAmplitude = GetWithDefault('Oscillation Amplitude (P
 
 %% Stimulus setup
 
-[expParams,st] = ExperimentParams(expParams); %runs function with all of the experiment parameters
+[expParams] = ExperimentParams(expParams); %runs function with all of the experiment parameters
 
 
 %TIMING - record time experiment started
@@ -162,7 +162,7 @@ while CircAdjustLoop == 1  %adjusting the circle.
     Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
     
     %DRAW FIXATION LINES
-    Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+    Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
     
     %INSTRUCTIONS
     DrawFormattedText(win,'Use buttons Y,B,X, and A to center the circle',(Xpos-(expParams.CircDiam_px./2)+20),(Ypos-60),[],[],[],1);
@@ -216,7 +216,7 @@ while CircAdjustLoop == 1  %adjusting the circle.
             %have to recaclulate these to get the most recent circle position
             
             %RECALCULATE CENTER OF TEST SPOT
-            TestSpotPos = CenterRectOnPointd([0, 0, expParams.TestSpotDiam_px, expParams.TestSpotDiam_px],Xpos,Ypos); %centers the test spot with the circle
+            TestSpotPos = CenterRectOnPointd([0, 0, TestSpotDiam_px, TestSpotDiam_px],Xpos,Ypos); %centers the test spot with the circle
             
             %SAVE ADJUSTMENT
             expParams.xStartGratingPos = xStartCropPos; %information for cropping grating
@@ -365,7 +365,7 @@ while ExptLoop == 1
             
             %DETERMINE TEST SPOT LUMINANCE
             SpotLum_logU = QuestMean(StairFunc); %still in log units
-            SpotLumVal = ((10^(QuestMean(StairFunc))).*255)+st.CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
+            SpotLumVal = ((10^(QuestMean(StairFunc))).*255)+CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
             %the luminance of the suround circle is added to the spot lum which it will be presented on
             SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
             
@@ -379,7 +379,7 @@ while ExptLoop == 1
                 Screen('FillRect',win,[128,128,128]); %grey background
                 
                 %DRAW FIXATION LINES
-                Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
                 
                 Screen('Flip', win);
                 
@@ -393,7 +393,7 @@ while ExptLoop == 1
                     Screen('FillRect',win,[128,128,128]); %grey background
                     
                     %DRAW FIXATION LINES
-                    Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                    Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
                     
                     %DRAW TEST SPOT
                     Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
@@ -500,7 +500,7 @@ while ExptLoop == 1
             
             %DETERMINE TEST SPOT LUMINANCE
             SpotLum_logU = QuestMean(StairFunc); %still in log units
-            SpotLumVal = ((10^(QuestMean(StairFunc))).*255)+st.CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
+            SpotLumVal = ((10^(QuestMean(StairFunc))).*255)+CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
             %the luminance of the suround circle is added to the spot lum which it will be presented on
             SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
             
@@ -513,10 +513,10 @@ while ExptLoop == 1
                 Screen('DrawTexture',win,Grating_Txt1);
                 
                 %DRAW CIRCLE
-                Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
+                Screen('FillOval',win,CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
                 
                 %DRAW FIXATION LINES
-                Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
                 
                 Screen('Flip', win);
                 
@@ -529,10 +529,10 @@ while ExptLoop == 1
                     Screen('DrawTexture',win,Grating_Txt1);
                     
                     %DRAW CIRCLE
-                    Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
+                    Screen('FillOval',win,CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
                     
                     %DRAW FIXATION LINES
-                    Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                    Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
                     
                     %DRAW TEST SPOT
                     Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
@@ -641,7 +641,7 @@ while ExptLoop == 1
             
             %DETERMINE TEST SPOT LUMINANCE
             SpotLum_logU = QuestMean(StairFunc); %still in log units
-            SpotLumVal = ((10^(QuestMean(StairFunc))).*255)+st.CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
+            SpotLumVal = ((10^(QuestMean(StairFunc))).*255)+CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
             %the luminance of the suround circle is added to the spot lum which it will be presented on
             SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
             
@@ -654,10 +654,10 @@ while ExptLoop == 1
                 Screen('DrawTexture',win,Grating_Txt1);
                 
                 %DRAW CIRCLE
-                Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
+                Screen('FillOval',win,CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
                 
                 %DRAW FIXATION LINES
-                Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
                 
                 Screen('Flip', win);
                 
@@ -679,10 +679,10 @@ while ExptLoop == 1
                         Screen('DrawTexture',win,Grating_Txt1); %already created the texture
                         
                         %DRAW CIRCLE
-                        Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
+                        Screen('FillOval',win,CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
                         
                         %DRAW FIXATION LINES
-                        Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                        Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
                         
                         %DRAW TEST SPOT
                         Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
@@ -701,10 +701,10 @@ while ExptLoop == 1
                         Screen('DrawTexture',win,Grating_Txt2);
                         
                         %DRAW CIRCLE
-                        Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
+                        Screen('FillOval',win,CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
                         
                         %DRAW FIXATION LINES
-                        Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                        Screen('DrawLines',win,AllCoords,FixLineWidth_px,FixLineRGB,[Xpos,Ypos]);
                         
                         %DRAW TEST SPOT
                         Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
