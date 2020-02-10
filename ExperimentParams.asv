@@ -11,11 +11,11 @@ expParams.TrialNumb_Grating0Hz = expParams.TrialsPerStaircase;
 expParams.TrialNumb_Grating4Hz = expParams.TrialsPerStaircase;
 expParams.TrialNumb_Grating10Hz = expParams.TrialsPerStaircase;
 expParams.TrialNumb_Grating15Hz = expParams.TrialsPerStaircase;
-%total trials
-expParams.TotalTrials = (expParams.TrialNumb_GreyField + expParams.TrialNumb_Grating0Hz + expParams.TrialNumb_Grating4Hz + ...
-                        expParams.TrialNumb_Grating10Hz + expParams.TrialNumb_Grating15Hz).*expParams.NumbOfStaircasesPerCond;
 
-
+expParams.TotalTrials = expParams.TrialNumb_GreyField + expParams.TrialNumb_Grating0Hz + expParams.TrialNumb_Grating4Hz...
+                        expParams.TrialNumb_Grating10Hz + expParams.TrialNumb_Grating15Hz
+expParams.TotalTrials = expParams.NumbOfCond.*expParams.TrialsPerStaircase.*expParams.NumbOfStaircasesPerCond;
+%trials per condition
 
 %SURROUND CIRCLE
 %Circle diameter in visual angle
