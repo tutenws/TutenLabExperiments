@@ -23,17 +23,17 @@ Screen('Preference', 'SkipSyncTests', 1);
 %SUBJ ID
 data.subjectID = GetWithDefault('Subject ID ', '10001R');
 
-%PIXEL PER DEGREE
-expParams.displayPixelsPerDegree = GetWithDefault('Enter display scaling (ppd) ', 75);
-
-%GRATING SPATIAL FREQUENCY       
-expParams.gratingSpatialFrequency = GetWithDefault('Enter grating spatial frequency (cycles/deg) ', 0.53);
-
 %NUMB OF STAIRCASES
 expParams.NumbOfStaircasesPerCond = GetWithDefault('Number of staircases per condition', 2);
 
 %TRIALS
 expParams.TrialsPerStaircase = GetWithDefault('Number of trials per stiarcase', 40); 
+
+%PIXEL PER DEGREE
+expParams.displayPixelsPerDegree = GetWithDefault('Enter display scaling (ppd) ', 75);
+
+%GRATING SPATIAL FREQUENCY       
+expParams.gratingSpatialFrequency = GetWithDefault('Enter grating spatial frequency (cycles/deg) ', 0.53);
 
 %OSCILLATION AMPLITUDE - of gratingTrial
 expParams.GratingOscillationAmplitude = GetWithDefault('Oscillation Amplitude (Period)', 0.5);%oscilating one period would not change the image
@@ -42,6 +42,11 @@ expParams.GratingOscillationAmplitude = GetWithDefault('Oscillation Amplitude (P
 %% Stimulus setup
 
 [expParams,st] = ExperimentParams(expParams); %runs function with all of the experiment parameters
+
+%LOAD PREVIOUS CIRC POSITION
+load('LastCircPos_px.mat'); %a structure with the x and y variables in pixes of the center of the circle
+XCircPos = LastCircPos_px.x; %x val in pix of center of circle
+YCircPos = LastCircPos_px.y; %y val in pix of center of circle
 
 
 %TIMING - record time experiment started
@@ -61,8 +66,8 @@ ScreenID = max(Screen('Screens')); %the largest number will be the screen that t
 %WINDOW DIMENTION IN PX 
 [expParams.winXpx, expParams.winYpx]=Screen('WindowSize',ScreenID);
 %Record visual angle of the window
-expParams.SurroundW_dg=expParams.winXpx./expParams.displayPixelsPerDegree;
-expParams.SurroundH_dg=expParams.winYpx./expParams.displayPixelsPerDegree;
+expParams.WinWidth_dg=expParams.winXpx./expParams.displayPixelsPerDegree;
+expParams.WinHeight_dg=expParams.winYpx./expParams.displayPixelsPerDegree;
 
 %PIXELS IN THE CENTER OF THE WINDOW
 [Xwincent, Ywincent] = RectCenter([0 0 expParams.winXpx expParams.winYpx]);
@@ -83,28 +88,12 @@ twobars = repelem([255,0],WidthOfOneBar_px); %repeats 255 and 0 the width of one
 Grating = repmat(twobars,expParams.winYpx,BarNumb);%repeat numbers to make the bars repeat the height of the window
     %this provides room for cropping the stimulus during the adjustment of the circle position
 
-%%%%%%%%%%%%%%%%% - **you will eventually want to load in the approapriate
-%crop of the grating to match the previously saved position of the circle
-
 %CROPING BAR SERIES TO FIT SCREEN AND FOR GRATING OSCILLATION
-xStartCropPos = expParams.winXpx; %changed once you load in values. you will want to load this value in. it determines where the cropping begins
-    %right now the crop begins in the middle of the array which we made twice the width of the screen
-xEndCropPos = xStartCropPos+expParams.winXpx; %you will also want to load this in
+xStartCropPos = (expParams.winXpx)./2; %begin crop at half a screen width in. Will make the position of the position of the grating relative to the circle constant
+xEndCropPos = xStartCropPos+expParams.winXpx; %ends the crop at width of screen from start crop
 yStartCropPos = 1; %you do not need to change the y position because the grating will look the same if moved up and down so you do not need to create that movemnet
 GratingPos_Crop = Grating(yStartCropPos:expParams.winYpx,xStartCropPos:xEndCropPos); %crop Grating to fit the window width & height
 
-%you will want to load values for the lasty pos and lastx pos
-
-%%%%%%%%%%%%%%%%%%%%%%%%555
-
-%%%%%%%%%%% - you will eventually not want to start out with the circle
-% centered, you will want to load the previous circle location
-Xpos = Xwincent; %making the x center of the window the center to which everything will be drawn
-Ypos = Ywincent; %making the y center of the window the center to which everything will be drawn
-
-%CIRC ADJUSTMENT VARIABLES
-expParams.AdjustIncrement_px = 35;%30;
-%%%%%%%%%%%%
 
 %% Circle Adjustment Proceedure
 %this will allow the subject to use the game controller to adjust the
@@ -118,7 +107,7 @@ while PadResp == 0
     
     %DRAW TEXT
     %Screen('Preferences','DefaultFontSize',[12]); %does not work
-    DrawFormattedText(win,'Stimulus Position Adjustment Procedure. Press any button to Continue','center','center',[],[],[],1);
+    DrawFormattedText(win,'Stimulus Position Adjustment Procedure. Press any button to Continue','center','center',[],[],[],0);
     %1 - flips text across the horizontal axis so text looks right side up when projected to eye
     
     Screen('DrawingFinished',win);
@@ -148,7 +137,6 @@ end
 %circle no matter the position of the circle. To do this the 
 %image is cropped differently each time the circle moves so it appears the 
 %grating is moving with the circle.
-%*****There should eventually be a way to load previous locations of the circle 
 
 
 while CircAdjustLoop == 1  %adjusting the circle.
@@ -158,17 +146,16 @@ while CircAdjustLoop == 1  %adjusting the circle.
     Screen('DrawTexture',win,GratingPos_Txt); %draws the grating texture to the window
    
     %DRAW CIRCLE
-    CircPos = CenterRectOnPointd([0, 0, expParams.CircDiam_px, expParams.CircDiam_px],Xpos,Ypos); %centers the circle on a point
+    CircPos = CenterRectOnPointd([0, 0, expParams.CircDiam_px, expParams.CircDiam_px],XCircPos,YCircPos); %centers the circle on a point
     Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
     
     %DRAW FIXATION LINES
-    Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+    Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
     
     %INSTRUCTIONS
-    DrawFormattedText(win,'Use buttons Y,B,X, and A to center the circle',(Xpos-(expParams.CircDiam_px./2)+20),(Ypos-60),[],[],[],1);
-    DrawFormattedText(win,'Once centered, press the right upper trigger',(Xpos-(expParams.CircDiam_px./2)+20),(Ypos+40),[],[],[],1);
+    DrawFormattedText(win,'Use buttons Y,B,X, and A to center the circle',(XCircPos-(expParams.CircDiam_px./2)+20),(YCircPos-60),[],[],[],0);
+    DrawFormattedText(win,'Once centered, press the right upper trigger',(XCircPos-(expParams.CircDiam_px./2)+20),(YCircPos+40),[],[],[],0);
     %corrdinates used to center the text within the circle
-    %1 - flips the text upside down
     
     Screen('DrawingFinished',win); %all items drawn to screen. optimizes drawing.
     Screen('Flip', win);
@@ -178,17 +165,17 @@ while CircAdjustLoop == 1  %adjusting the circle.
     if GamePad.buttonChange == 1 %Game pad button press check
         if GamePad.buttonY == 1 %Y button pressed. Up movement of circ
             %CIRCLE POSITION
-            Ypos = Ypos + expParams.AdjustIncrement_px; %note: it is flipped when on a window screen
+            YCircPos = YCircPos - expParams.AdjustIncrement_px; %note: it is flipped when on a window screen
             %GRATING POSITION - you don't need to adjust this because the grating does not change vertically
         end
         if GamePad.buttonA == 1 %A button pressed. Down movement
             %CIRCLE POSITION
-            Ypos = Ypos - expParams.AdjustIncrement_px;
+            YCircPos = YCircPos + expParams.AdjustIncrement_px;
             %GRATING POSITION - you don't need to adjust this because the grating does not change vertically
         end
         if GamePad.buttonX == 1 %X button press. leftward movement
             %CIRCLE ADJUSTMENT
-            Xpos = Xpos - expParams.AdjustIncrement_px;
+            XCircPos = XCircPos - expParams.AdjustIncrement_px;
             %GRATING ADJUSTMENT
             xStartCropPos = xStartCropPos + expParams.AdjustIncrement_px; %sets the horizontal cropping of the grating to a value that will
             %make it appear like the grating position is moving with the circle
@@ -198,7 +185,7 @@ while CircAdjustLoop == 1  %adjusting the circle.
         end
         if GamePad.buttonB == 1 %B button press. Rightward movement
             %CIRCLE ADJUSTMENT
-            Xpos = Xpos + expParams.AdjustIncrement_px;
+            XCircPos = XCircPos + expParams.AdjustIncrement_px;
             %GRATING ADJUSTMENT
             xStartCropPos = xStartCropPos - expParams.AdjustIncrement_px;%sets the horizontal cropping of the grating to a value that will
             %make it appear like the grating position is moving with the circle
@@ -212,18 +199,17 @@ while CircAdjustLoop == 1  %adjusting the circle.
             CircAdjustLoop = 0;
             
             %RECALCULATE CENTERED CIRCLE
-            CircPos = CenterRectOnPointd([0, 0, expParams.CircDiam_px, expParams.CircDiam_px],Xpos,Ypos); %centers the circle on a point
+            CircPos = CenterRectOnPointd([0, 0, expParams.CircDiam_px, expParams.CircDiam_px],XCircPos,YCircPos); %centers the circle on a point
             %have to recaclulate these to get the most recent circle position
             
             %RECALCULATE CENTER OF TEST SPOT
-            TestSpotPos = CenterRectOnPointd([0, 0, expParams.TestSpotDiam_px, expParams.TestSpotDiam_px],Xpos,Ypos); %centers the test spot with the circle
+            TestSpotPos = CenterRectOnPointd([0, 0, expParams.TestSpotDiam_px, expParams.TestSpotDiam_px],XCircPos,YCircPos); %centers the test spot with the circle
             
             %SAVE ADJUSTMENT
-            expParams.xStartGratingPos = xStartCropPos; %information for cropping grating
-            expParams.xEndGratingPos = xEndCropPos;%information for cropping the grating
-            
-            expParams.CircXpos = Xpos; %x position of the circle
-            expParams.CircYpos = Ypos; %y position of the circle
+            expParams.CircXpos = XCircPos; %x position of the circle saved in a struct for this participant
+            expParams.CircYpos = YCircPos; %y position of the circle
+            LastCircPos_px.x = XCircPos; %saved in structure for next time you run expt
+            LastCircPos_px.y = YCircPos; %saved in structure for next time you run expt
             
             %NEXT LOOP VARIABLE
             FirstRun = 1; %used to being next loop
@@ -237,7 +223,6 @@ while CircAdjustLoop == 1  %adjusting the circle.
         end
     end %game pad check
 end
-
 
 
 
@@ -296,7 +281,7 @@ while FirstRun == 1 %first run of experiment
     Screen('FillRect',win,[128,128,128]); %grey background
     
     %DRAW TEXT
-    DrawFormattedText(win,'Main Experiment. Press any button to Continue',(Xpos-(expParams.CircDiam_px./2)+20),Ypos,[],[],[],1);
+    DrawFormattedText(win,'Main Experiment. Press any button to Continue',(XCircPos-(expParams.CircDiam_px./2)+20),YCircPos,[],[],[],0);
     %1 - flips text across the horizontal axis so text looks right side up when projected to eye
     %Xpos and Ypos are the center position for the circle. the text is being drawn in the middle of the circle
     
@@ -345,9 +330,9 @@ while ExptLoop == 1
     
     %%%%***REMOVE LEATER%%
     %CondType = 2;
-    data.RandTrialSequence = [1 2 3];
+    data.RandTrialSequence = [1];
     CondType = data.RandTrialSequence(TrialCounter);
-    expParams.RespInStaircase = 3;
+    expParams.RespInStaircase = 2;
     expParams.TotalTrials = length(data.RandTrialSequence);
     %%%%%%%%%%
     
@@ -372,6 +357,7 @@ while ExptLoop == 1
             
             StartStim = GetSecs;
             TimeNow = StartStim;
+            FirstSpotLoop = 1;
             %STIMULUS PRESENTATION
             while TimeNow - StartStim < expParams.TrialDuration_s && EscapeExp == 0 %within trial duration
                 
@@ -379,12 +365,12 @@ while ExptLoop == 1
                 Screen('FillRect',win,[128,128,128]); %grey background
                 
                 %DRAW FIXATION LINES
-                Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
                 
                 Screen('Flip', win);
                 
                 TimeNow = GetSecs;
-                
+               
                 %PRESENT TEST SPOT
                 %while TimeNow < (StartStim + expParams.PreTestSpotDur_s + expParams.TestSpotDur_s) &&  TimeNow > (StartStim + expParams.PreTestSpotDur_s)
                 while TimeNow > (StartStim + expParams.PreTestSpotDur_s) && TimeNow < (StartStim + expParams.PreTestSpotDur_s + expParams.TestSpotDur_s) && EscapeExp == 0
@@ -393,7 +379,13 @@ while ExptLoop == 1
                     Screen('FillRect',win,[128,128,128]); %grey background
                     
                     %DRAW FIXATION LINES
-                    Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                    Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
+                    
+                    %BEEPER - indicate test spot is about to be presented
+                    if FirstSpotLoop == 1
+                        Beeper(expParams.TestBeepFq,expParams.TestBeepVol,expParams.TestBeepDur_s);
+                        FirstSpotLoop = 0;
+                    end
                     
                     %DRAW TEST SPOT
                     Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
@@ -414,7 +406,7 @@ while ExptLoop == 1
                 Screen('FillRect',win,[128,128,128]); %grey background
                 
                 %DRAW TEXT
-                DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(Xpos-(expParams.CircDiam_px./2)+20),Ypos,[],[],[],1);
+                DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(XCircPos-(expParams.CircDiam_px./2)+20),YCircPos,[],[],[],0);
                 %1 - flips text across the horizontal axis so text looks right side up when projected to eye
                 
                 Screen('Flip', win);
@@ -428,6 +420,9 @@ while ExptLoop == 1
                         StairFunc = QuestUpdate(StairFunc,SpotLum_logU,1); %updates the stair case
                         %1 - subject saw the stimulus
                         
+                        %RESPONSE BEEP - to indicate response has been recorded
+                        Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
+                        
                         %SAVE LUMINANCE
                         data.TestLuminance_GreyField(CurrentStep,GreyCond_Counter) = SpotLumVal;
                         data.TestLuminance_logU_GreyField(CurrentStep,GreyCond_Counter) = SpotLum_logU;
@@ -440,11 +435,15 @@ while ExptLoop == 1
                         StairFunc = QuestUpdate(StairFunc,SpotLum_logU,0); %updates the stair case
                         %1 - subject saw the stimulus
                         
+                        %RESPONSE BEEP - to indicate response has been recorded
+                        Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
+                        
                         %SAVE LUMINANCE
                         data.TestLuminance_GreyField(CurrentStep,GreyCond_Counter) = SpotLumVal;
                         data.TestLuminance_logU_GreyField(CurrentStep,GreyCond_Counter) = SpotLum_logU;
                         RespLoop = 0; %end resp loop
                         InitiateNextTrial = 1; %initates a grey screen and next trial
+
                     end
                     
                     %ESCAPE EXPERIMENT
@@ -482,7 +481,6 @@ while ExptLoop == 1
         if EscapeExp == 0 %subject has not escaped the experiment
             data.TrialSequenceCompleted(1,TrialCounter) = CondType; %records the condition sequence that has been completed
         end
-        %**How do we know when the staircase has ended?
         
         CondType = 0; %end condition loop
     end %Grey Field Cond
@@ -504,6 +502,7 @@ while ExptLoop == 1
             %the luminance of the suround circle is added to the spot lum which it will be presented on
             SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
             
+            FirstSpotLoop = 1;
             StartStim = GetSecs;
             TimeNow = StartStim;
             %STIMULUS PRESENTATION
@@ -516,7 +515,7 @@ while ExptLoop == 1
                 Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
                 
                 %DRAW FIXATION LINES
-                Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
                 
                 Screen('Flip', win);
                 
@@ -532,7 +531,13 @@ while ExptLoop == 1
                     Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
                     
                     %DRAW FIXATION LINES
-                    Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                    Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
+                    
+                    %BEEPER - indicate test spot is about to be presented
+                    if FirstSpotLoop == 1
+                        Beeper(expParams.TestBeepFq,expParams.TestBeepVol,expParams.TestBeepDur_s);
+                        FirstSpotLoop = 0;
+                    end
                     
                     %DRAW TEST SPOT
                     Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
@@ -553,7 +558,7 @@ while ExptLoop == 1
                 Screen('FillRect',win,[128,128,128]); %grey background
                 
                 %DRAW TEXT
-                DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(Xpos-(expParams.CircDiam_px./2)+20),Ypos,[],[],[],1);
+                DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(XCircPos-(expParams.CircDiam_px./2)+20),YCircPos,[],[],[],0);
                 %1 - flips text across the horizontal axis so text looks right side up when projected to eye
                 
                 Screen('Flip', win);
@@ -567,6 +572,9 @@ while ExptLoop == 1
                         StairFunc = QuestUpdate(StairFunc,SpotLum_logU,1); %updates the stair case
                         %1 - subject saw the stimulus
                         
+                        %RESPONSE BEEP - to indicate response has been recorded
+                        Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
+                        
                         %SAVE LUMINANCE
                         data.TestLuminance_Grating0Hz(CurrentStep,Grating0Hz_Counter) = SpotLumVal;
                         data.TestLuminance_logU_Grating0Hz(CurrentStep,Grating0Hz_Counter) = SpotLum_logU;
@@ -578,6 +586,9 @@ while ExptLoop == 1
                         %UPDATE STAIRCASE
                         StairFunc = QuestUpdate(StairFunc,SpotLum_logU,0); %updates the stair case
                         %1 - subject saw the stimulus
+                        
+                        %RESPONSE BEEP - to indicate response has been recorded
+                        Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
                         
                         %SAVE LUMINANCE
                         data.TestLuminance_Grating0Hz(CurrentStep,Grating0Hz_Counter) = SpotLumVal; %each column will be a different staircase
@@ -645,6 +656,7 @@ while ExptLoop == 1
             %the luminance of the suround circle is added to the spot lum which it will be presented on
             SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
             
+            FirstSpotLoop = 0;
             StartStim = GetSecs;
             TimeNow = StartStim;
             %STIMULUS PRESENTATION
@@ -657,7 +669,7 @@ while ExptLoop == 1
                 Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
                 
                 %DRAW FIXATION LINES
-                Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
                 
                 Screen('Flip', win);
                 
@@ -682,7 +694,13 @@ while ExptLoop == 1
                         Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
                         
                         %DRAW FIXATION LINES
-                        Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                        Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
+                        
+                        %BEEPER - indicate test spot is about to be presented
+                        if FirstSpotLoop == 1
+                            Beeper(expParams.TestBeepFq,expParams.TestBeepVol,expParams.TestBeepDur_s);
+                            FirstSpotLoop = 0;
+                        end
                         
                         %DRAW TEST SPOT
                         Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
@@ -704,7 +722,7 @@ while ExptLoop == 1
                         Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
                         
                         %DRAW FIXATION LINES
-                        Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[Xpos,Ypos]);
+                        Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
                         
                         %DRAW TEST SPOT
                         Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
@@ -728,7 +746,7 @@ while ExptLoop == 1
                 Screen('FillRect',win,[128,128,128]); %grey background
                 
                 %DRAW TEXT
-                DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(Xpos-(expParams.CircDiam_px./2)+20),Ypos,[],[],[],1);
+                DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(XCircPos-(expParams.CircDiam_px./2)+20),YCircPos,[],[],[],0);
                 %1 - flips text across the horizontal axis so text looks right side up when projected to eye
                 
                 Screen('Flip', win);
@@ -745,6 +763,9 @@ while ExptLoop == 1
                         %OSCILLATION CHECK
                         data.OscillationNumb_array(CurrentStep,Grating4Hz_Counter) = OscillationNumb; %row-oscillations for that stem, col-each staircase
                         
+                        %RESPONSE BEEP - to indicate response has been recorded
+                        Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
+                        
                         %SAVE LUMINANCE
                         data.TestLuminance_Grating4Hz(CurrentStep,Grating4Hz_Counter) = SpotLumVal;
                         data.TestLuminance_logU_Grating4Hz(CurrentStep,Grating4Hz_Counter) = SpotLum_logU;
@@ -759,6 +780,9 @@ while ExptLoop == 1
                         
                         %OSCILLATION CHECK
                         data.OscillationNumb_array(CurrentStep,Grating4Hz_Counter) = OscillationNumb; %row-oscillations for that stem, col-each staircase
+                        
+                        %RESPONSE BEEP - to indicate response has been recorded
+                        Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
                         
                         %SAVE LUMINANCE
                         data.TestLuminance_Grating4Hz(CurrentStep,Grating4Hz_Counter) = SpotLumVal; %each column will be a different staircase
@@ -829,7 +853,7 @@ while ExptLoop == 1
         Screen('FillRect',win,[128,128,128]); %grey background
         
         %DRAW TEXT
-        DrawFormattedText(win,'Experiment Finished',(Xpos-(expParams.CircDiam_px./2)+20),Ypos,[],[],[],1);
+        DrawFormattedText(win,'Experiment Finished',(XCircPos-(expParams.CircDiam_px./2)+20),YCircPos,[],[],[],0);
         %1 - flips text across the horizontal axis so text looks right side up when projected to eye
         
         Screen('DrawingFinished',win);
@@ -843,12 +867,12 @@ while ExptLoop == 1
     
 end %Experiment Loop
 
- sca;
-
+sca;
 
 
  %% Save Data & Calculations
  
+ %SAVE DATA & PARAMS
  TotTrial = num2str(expParams.TotalTrials);
  savdir = 'D:\Tuten_Lab\Expt_Masking\Code\TutenLabExperiments\Data\';
  data.EndTime = datestr(clock,'mm_dd_yy_HHMM');
@@ -856,18 +880,31 @@ end %Experiment Loop
  filename = [savdir save_file];
  save(filename,'data','expParams');
  
+ %SAVE CIRCLE POSITION
+ CircSavdir = 'D:\Tuten_Lab\Expt_Masking\Code\TutenLabExperiments\';
+ CircSave_file = 'LastCircPos_px.mat';
+ Circfilename = [CircSavdir CircSave_file];
+ save(Circfilename,'LastCircPos_px');
  
  
  
  %if experiment has been ended prematurely
  if TrialCounter < expParams.TotalTrials
+     %SAVE DATA & PARAMETERS
      TotTrial = num2str(expParams.TotalTrials);
-     
      savdir = 'D:\Tuten_Lab\Expt_Masking\Code\TutenLabExperiments\Data\';
      data.EndTime = datestr(clock,'mm_dd_yy_HHMM');
      save_file = strcat(data.subjectID,'_','notcomplete','_',TotTrial,'TotalTrials_',data.StartTime,'.mat');
      filename = [savdir save_file];
-     save(filename,'data','expParams');
+     save(filename,'data','expParams','LastCircPos_px');
+     
+     %SAVE CIRCLE POSITION - saved in struct that will be loaded for next
+     %experiment run
+     CircSavdir = 'D:\Tuten_Lab\Expt_Masking\Code\TutenLabExperiments\';
+     CircSave_file = 'LastCircPos_px.mat';
+     Circfilename = [CircSavdir CircSave_file];
+     save(Circfilename,'LastCircPos_px');
+     
  end
 
 

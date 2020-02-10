@@ -10,12 +10,13 @@ expParams.TotalTrials = expParams.NumbOfCond.*expParams.TrialsPerStaircase;
 %SURROUND CIRCLE
 %Circle diameter in visual angle
 expParams.CircDiam_dg=7;
-
 %Circle diameter in pixels
 expParams.CircDiam_px=expParams.displayPixelsPerDegree.*expParams.CircDiam_dg;
 %Circle Luminance
 expParams.CircLum = [128,128,128];
 st.CircLumVal = expParams.CircLum(1,1); %needed for luminance adjustment of test spot
+%CIRC ADJUSTMENT VARIABLES
+expParams.AdjustIncrement_px = 35;%30;
 
 
 %TEST SPOT
@@ -39,8 +40,17 @@ st.AllCoords = [st.xCoords; st.yCoords];
 expParams.OneOscillation_sec_4Hz = 1./4; %the lines swich from black to white 4 times in 1 sec (black white black white)
 expParams.OneOscillation_sec_10Hz = 1./10;
 expParams.OneOscillation_sec_15Hz = 1./15;
+
+%BEEPER - there is a beep before test spot is presented and after response is recorded
+expParams.TestBeepFq = 400;
+expParams.TestBeepVol = 1;
+expParams.TestBeepDur_s = 0.1;
+%response beeper
+expParams.RespBeepFq = 250;
+expParams.RespBeepVol = 2;
+expParams.RespBeepDur_s = 0.25;
  
- %TRIAL SEQUENCE SPECIFICATIONS
+%TRIAL SEQUENCE SPECIFICATIONS
 expParams.TrialDuration_s = 1.1;
 expParams.TestSpotDur_s = 0.1;
 expParams.PreTestSpotDur_s = 0.5;
