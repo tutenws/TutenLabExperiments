@@ -57,7 +57,7 @@ expParams.TestBeepVol = 1;
 expParams.TestBeepDur_s = 0.1;
 %response beeper
 expParams.RespBeepFq = 250;
-expParams.RespBeepVol = 2;
+expParams.RespBeepVol = 7;
 expParams.RespBeepDur_s = 0.25;
  
 %TRIAL SEQUENCE SPECIFICATIONS
