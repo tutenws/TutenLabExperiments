@@ -6,11 +6,16 @@ function [expParams,st] = ExperimentParams(expParams)
 %TRIALS & CONDITIONS
 expParams.NumbOfCond = 5;
 %trials per condition - if you wanted a different number of trials per condition
-expParams.TrialNumb_GreyField = expParams.TrialsPerStaircase;
-expParams.TrialNumb_Grating0Hz = expParams.TrialsPerStaircase;
+expParams.TrialNumb_GreyField = 0;
+expParams.TrialNumb_Grating0Hz = 0;
 expParams.TrialNumb_Grating4Hz = expParams.TrialsPerStaircase;
-expParams.TrialNumb_Grating10Hz = expParams.TrialsPerStaircase;
-expParams.TrialNumb_Grating15Hz = expParams.TrialsPerStaircase;
+expParams.TrialNumb_Grating10Hz = 0;
+expParams.TrialNumb_Grating15Hz = 0;
+% expParams.TrialNumb_GreyField = expParams.TrialsPerStaircase;
+% expParams.TrialNumb_Grating0Hz = expParams.TrialsPerStaircase;
+% expParams.TrialNumb_Grating4Hz = expParams.TrialsPerStaircase;
+% expParams.TrialNumb_Grating10Hz = expParams.TrialsPerStaircase;
+% expParams.TrialNumb_Grating15Hz = expParams.TrialsPerStaircase;
 %total trials
 expParams.TotalTrials = (expParams.TrialNumb_GreyField + expParams.TrialNumb_Grating0Hz + expParams.TrialNumb_Grating4Hz + ...
                         expParams.TrialNumb_Grating10Hz + expParams.TrialNumb_Grating15Hz).*expParams.NumbOfStaircasesPerCond;
@@ -22,6 +27,7 @@ expParams.TotalTrials = (expParams.TrialNumb_GreyField + expParams.TrialNumb_Gra
 expParams.CircDiam_dg=7;
 %Circle diameter in pixels
 expParams.CircDiam_px=expParams.displayPixelsPerDegree.*expParams.CircDiam_dg;
+expParams.CircRad_px = expParams.CircDiam_px./2;
 %Circle Luminance
 expParams.CircLum = [128,128,128];
 st.CircLumVal = expParams.CircLum(1,1); %needed for luminance adjustment of test spot
@@ -32,6 +38,7 @@ expParams.AdjustIncrement_px = 35;%30;
 %TEST SPOT
 expParams.TestSpotDiam_dg = 0.38; %visual angle of test spot
 expParams.TestSpotDiam_px = expParams.displayPixelsPerDegree.*expParams.TestSpotDiam_dg; %diameter in pxiels
+expParams.TestSpotRad_px = expParams.TestSpotDiam_px./2; %radius of test spot
 
 %FIXATION LINE - 4 tick marks will be around the circl eto direct the
 %participant's gaze to the center of the circle
@@ -57,7 +64,7 @@ expParams.TestBeepVol = 1;
 expParams.TestBeepDur_s = 0.1;
 %response beeper
 expParams.RespBeepFq = 250;
-expParams.RespBeepVol = 7;
+expParams.RespBeepVol = 9;
 expParams.RespBeepDur_s = 0.25;
  
 %TRIAL SEQUENCE SPECIFICATIONS

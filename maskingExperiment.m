@@ -136,6 +136,8 @@ yStartCropPos = 1; %you do not need to change the y position because the grating
 GratingPos_Crop = Grating(yStartCropPos:expParams.winYpx,xStartCropPos:xEndCropPos); %crop Grating to fit the window width & height
 
 
+
+
 %% Circle Adjustment Proceedure
 %this will allow the subject to use the game controller to adjust the
 %position of the stimulus so that it is in the center of the projection
@@ -266,8 +268,7 @@ while CircAdjustLoop == 1  %adjusting the circle.
 end
 
 
-
-%% Prepare for Main Experiment - Grating Oscillation Set-up
+%% Create Gratings for Main Experiment
 
 %DETERMINE GRATING SERIES 1 & 2
 %to create an oscillation between white and black bars, we will create two
@@ -276,17 +277,98 @@ end
 
 %GRATING 1
 Grating_Crop1 = GratingPos_Crop; %the crop of the grating chosen in the adjustment proceedure
-%make texture to be drawn later
-Grating_Txt1 = Screen('MakeTexture',win,Grating_Crop1);
+GratingSpot_Crop1 = GratingPos_Crop; %this will be the grating frame with the test spot
 
 %GRATING 2
 %Determines how much to crop bar series 2 to simulate an oscillation of the specified period
 OscillationAmp = expParams.GratingOscillationAmplitude.*(2.*WidthOfOneBar_px); %determines one oscilation cycle in pixels. Basically where to start the x crop of the second grating
 Grating_Crop2 = Grating(yStartCropPos:expParams.winYpx, (xStartCropPos+OscillationAmp):(xEndCropPos+OscillationAmp)); %crops the second bar series
-%create a texture
-Grating_Txt2 = Screen('MakeTexture',win,Grating_Crop2); %this will be drawn later
+GratingSpot_Crop2 = Grating_Crop2; %this will be the grating with the test spot
 
-%% Prepare for Main Experiment - Condition Order & Staircase
+
+%% Draw Textures for Main Experiment
+%To optimize the drawing process for the Grating flicker conditions, 
+%the images will be made before the experiment is run.
+
+%GRATING 4HZ, 10HZ, 15HZ CONDITIONS
+%each condition with  use four images. Two with the test spot and two
+%without. two types of gratings are used to create the flicker.
+%Make images with
+%     (1) grating1,souround circle, fixation lines 
+%     (2) grating2, souround circle, fication lines
+%     (3) grating1, souround circle, fixation lines, and test spot
+%     (4) grating2, surround circle, fixation lines, and test spot
+
+%the textures will be made in layers and then combined to make an image.
+
+%CIRCLE LAYER
+%Make a blank image  the size of the screen. then insert a circle of the
+%correct size into the blank image.
+circleLayer = zeros(size(Grating_Crop1)); %makes a matrix with zeros the size of the screen
+circleSurround = double(Circle(expParams.CircRad_px)).*255; %radius of the circle
+%Parameters used to index into the blank and put the circle in the correct position 
+CircLeftEdge=round(XCircPos-expParams.CircRad_px);
+CircRightEdge=round(XCircPos+expParams.CircRad_px);
+CircTopEdge=round(YCircPos-expParams.CircRad_px); %center plus the radius of the circle
+%Draw the circle into the blank image the size of the screen in the correct position
+circleLayer(CircTopEdge:((CircTopEdge-1)+expParams.CircDiam_px), CircLeftEdge:((CircLeftEdge-1)+expParams.CircDiam_px)) = circleSurround;
+
+%FIXATION LINE LAYER
+%each line has to be drawn individually and then we will index into the
+%fixLayer (blank image the size of the screen) to properly place the
+%fixation lines.
+fixLayer = zeros(size(Grating_Crop1)); %blank image the size of the screen
+%One verticle and horizontal fixation line drawn alone
+fixLineH = ones(expParams.FixLineWidth_px,expParams.FixLineLength_px).*255; %horizontal line
+fixLineV = ones(expParams.FixLineLength_px,expParams.FixLineWidth_px).*255; %verticle line
+%Parameters used to index into the blank image to place the fixation lines
+HorizontalFixLineTop = round(YCircPos+(expParams.FixLineWidth_px./2));%top of the horizontal fixation line. center of the circle plus half the width of the line
+LeftFixLineX = round(CircRightEdge-expParams.FixLineLength_px); %x px value where the left horizontal fixation line begins
+VerticalFixLineXStart = round(XCircPos-(expParams.FixLineWidth_px./2));%x value of left side of vertical fixation lines
+VerticalFixLineTop = round((YCircPos+expParams.CircRad_px)-expParams.FixLineLength_px);%the y value of the top of the bottom vertical fixation line
+%Position right horizontal line
+fixLayer(HorizontalFixLineTop:((HorizontalFixLineTop-1)+expParams.FixLineWidth_px), CircLeftEdge:((CircLeftEdge-1)+expParams.FixLineLength_px))=fixLineH;
+%Position left horizontal line
+fixLayer(HorizontalFixLineTop:((HorizontalFixLineTop-1)+expParams.FixLineWidth_px), LeftFixLineX:((LeftFixLineX-1)+expParams.FixLineLength_px))=fixLineH;
+%Position top Verticle Fixation Line
+fixLayer(CircTopEdge:((CircTopEdge-1)+expParams.FixLineLength_px), VerticalFixLineXStart:((VerticalFixLineXStart-1)+expParams.FixLineWidth_px)) = fixLineV;
+%Position bottom Vertical Fixation Line
+fixLayer(VerticalFixLineTop:((VerticalFixLineTop-1)+expParams.FixLineLength_px), VerticalFixLineXStart:((VerticalFixLineXStart-1)+expParams.FixLineWidth_px)) = fixLineV;
+
+%TEST SPOT LAYER
+%This layer will not be added until it is within the experiment because 
+%the luminance of the test spot will be updated each response
+testspotLayer = zeros(size(Grating_Crop1)); %black image the size of the grating
+testspot = double(Circle(expParams.TestSpotRad_px)).*255; %creates a white test spot
+%placement of test spot parameters
+TestSpotTop = round(YCircPos-expParams.TestSpotRad_px); %Y value for top of test spot
+TestSpotLeftEdge = round(XCircPos-expParams.TestSpotRad_px); %x value for left edge of test spot
+%put test spot into testspotLayer
+testspotLayer(TestSpotTop:((TestSpotTop-1)+round(expParams.TestSpotDiam_px)), TestSpotLeftEdge:((TestSpotLeftEdge-1)+round(expParams.TestSpotDiam_px)))=testspot; 
+
+
+%CREATE IMAGES
+%without test spot
+Grating_Crop1(circleLayer>0)=expParams.CircLum(1);
+Grating_Crop1(fixLayer>0)=expParams.FixLineRGB(1);
+Grating_Crop2(circleLayer>0)=expParams.CircLum(1);
+Grating_Crop2(fixLayer>0)=expParams.FixLineRGB(1); 
+%with test spot
+GratingSpot_Crop1(circleLayer>0)=expParams.CircLum(1);%add the cirlce
+GratingSpot_Crop1(fixLayer>0)=expParams.FixLineRGB(1); %fixation lines
+GratingSpot_Crop2(circleLayer>0)=expParams.CircLum(1);%add the cirlce
+GratingSpot_Crop2(fixLayer>0)=expParams.FixLineRGB(1); %fixation lines
+
+
+%CREATE TEXTURES
+%only create textures for the gratings *without* the test spots because the
+%test spot gradings have to be made within the experiment
+Grating_Txt1 = Screen('MakeTexture',win,Grating_Crop1); %texture without test spot
+Grating_Txt2 = Screen('MakeTexture',win,Grating_Crop2); %texture without 
+
+
+
+%% Randomize Trial Order 
 %The conditions should be interleaved
 %Experimental Conditions: (1 or 6) Grey Field (2 or 7) Flickering grating at 0Hz,   
 %(3 or 8) 4Hz, (4 or 9) 10Hz, (5 or 10) 15Hz [these numbers will be used to label these conditions. 
@@ -452,10 +534,10 @@ while ExptLoop == 1
         %the luminance of the suround circle is added to the spot lum which it will be presented on
         SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
         
-        
         StartStim = GetSecs;
         TimeNow = StartStim;
         FirstSpotLoop = 1;
+        tic
         %STIMULUS PRESENTATION
         while TimeNow - StartStim < expParams.TrialDuration_s && EscapeExp == 0 %within trial duration
             
@@ -494,6 +576,7 @@ while ExptLoop == 1
                 
             end %test spot presentation
         end %trial duration
+        toc
         
         
         %RESPONSE LOOP - subj indicates if they saw the test spot
@@ -869,83 +952,133 @@ if CondType == 2 && EscapeExp < 1
         %the luminance of the suround circle is added to the spot lum which it will be presented on
         SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
         
+        %CREATE IMAGE TEXTURES - only for test spot greatings
+        %textures have already been made for the frames with no test spot.
+        %Create the test spot textures with the updated test spot
+        %luminance
+        GratingSpot_Crop1(testspotLayer>0) = SpotLumVal; %replaces position of spot in test spot layer with a test spot with determined luminance
+        GratingSpot_Crop2(testspotLayer>0) = SpotLumVal; %second crop used for flicker
+        %Create Texture
+        GratingSpot_Txt1 = Screen('MakeTexture',win,GratingSpot_Crop1);
+        GratingSpot_Txt2 = Screen('MakeTexture',win,GratingSpot_Crop2);
+        
+        
         
         StartStim = GetSecs;
         TimeNow = StartStim;
-        FirstSpotLoop = 1;
         %STIMULUS PRESENTATION
-        while TimeNow - StartStim < expParams.TrialDuration_s && EscapeExp == 0 %within trial duration
-            
-            %DRAW BAR SERIES 1
-            Screen('DrawTexture',win,Grating_Txt1);
-            
-            %DRAW CIRCLE
-            Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
-            
-            %DRAW FIXATION LINES
-            Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
-            
-            Screen('Flip', win);
-            
-            TimeNow = GetSecs;
-            
-            
-            %PRESENT TEST SPOT
-            while TimeNow > (StartStim + expParams.PreTestSpotDur_s) && TimeNow < (StartStim + expParams.PreTestSpotDur_s + expParams.TestSpotDur_s) && EscapeExp == 0
-                
-                %The image will oscillate between the bar 1 and bar 2
-                %series to create a flicker effect at the given
-                %frequency
-                
-                %BAR 1 SERIES
-                LastChange = TimeNow; %last time grating was changed. Used for oscillating while loop
-                while (LastChange == TimeNow) || (expParams.OneOscillation_sec_4Hz >= (TimeNow - LastChange))
-                    
-                    %DRAW GRATING
-                    Screen('DrawTexture',win,Grating_Txt1); %already created the texture
-                    
-                    %DRAW CIRCLE
-                    Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
-                    
-                    %DRAW FIXATION LINES
-                    Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
-                    
-                    %BEEPER - indicate test spot is about to be presented
-                    if FirstSpotLoop == 1
-                        Beeper(expParams.TestBeepFq,expParams.TestBeepVol,expParams.TestBeepDur_s);
-                        FirstSpotLoop = 0;
-                    end
-                    
-                    %DRAW TEST SPOT
-                    Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
-                    
-                    Screen('Flip', win);
-                                      
-                    TimeNow = GetSecs;
-                end
-                
-                %BAR 2 SERIES
-                LastChange = TimeNow; %last time grating was changed. Used for oscillating while loop
-                while (LastChange == TimeNow) || (expParams.OneOscillation_sec_4Hz >= (TimeNow - LastChange))
-                    %DRAW GRATING
-                    Screen('DrawTexture',win,Grating_Txt2);
-                    
-                    %DRAW CIRCLE
-                    Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
-                    
-                    %DRAW FIXATION LINES
-                    Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
-                    
-                    %DRAW TEST SPOT
-                    Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
-                    
-                    Screen('Flip', win);
-                                        
-                    TimeNow = GetSecs;
-                end
-                
-            end %test spot presentation
-        end %trial duration
+        while (TimeNow-StartStim) < 0.5  %500 ms before presentation of 
+        Screen('DrawTexture',win,Grating_Txt1);
+        Screen('Flip', win);
+        WaitSecs(0.125); %if 4 hz then we want a full flip every 0.125 ms
+        Screen('DrawTexture',win,Grating_Txt2);
+        Screen('Flip', win);
+        WaitSecs(0.125);
+        TimeNow = GetSecs;
+        end
+        %TEST SPOT PRESENTATION
+        StartSpot=TimeNow;
+%         Beeper(expParams.TestBeepFq,expParams.TestBeepVol,expParams.TestBeepDur_s);
+        while (TimeNow-StartSpot)<0.1 %100 ms before presentation
+        Screen('DrawTexture',win,GratingSpot_Txt1);
+        Screen('Flip', win);
+        WaitSecs(0.125);
+        Screen('DrawTexture',win,GratingSpot_Txt2);
+        Screen('Flip', win);
+        WaitSecs(0.125);
+        TimeNow=GetSecs;
+        end
+        StartStim=TimeNow;
+        while (TimeNow-StartStim) < 0.5  %500 ms before presentation of 
+        Screen('DrawTexture',win,Grating_Txt1);
+        Screen('Flip', win);
+        WaitSecs(0.125); %if 4 hz then we want a full flip every 0.125 ms
+        Screen('DrawTexture',win,Grating_Txt2);
+        Screen('Flip', win);
+        WaitSecs(0.125);
+        TimeNow = GetSecs;
+        end
+        
+%         StartStim = GetSecs;
+%         TimeNow = StartStim;
+%         FirstSpotLoop = 1;
+%         %STIMULUS PRESENTATION
+%         while (TimeNow - StartStim < expParams.TrialDuration_s) && (EscapeExp == 0) %within trial duration
+%             %FLICKER BEFORE TEST SPOT PRESENTATION
+%             %500 ms before test spot is presented
+%             
+%             
+%             
+%             %DRAW BAR SERIES 1
+%             Screen('DrawTexture',win,Grating_Txt1);
+%             
+%             %DRAW CIRCLE
+%             Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
+%             
+%             %DRAW FIXATION LINES
+%             Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
+%             
+%             Screen('Flip', win);
+%             
+%             TimeNow = GetSecs;
+%             
+%             
+%             %PRESENT TEST SPOT
+%             while TimeNow > (StartStim + expParams.PreTestSpotDur_s) && TimeNow < (StartStim + expParams.PreTestSpotDur_s + expParams.TestSpotDur_s) && EscapeExp == 0
+%                 
+%                 %The image will oscillate between the bar 1 and bar 2
+%                 %series to create a flicker effect at the given
+%                 %frequency
+%                 
+%                 %BAR 1 SERIES
+%                 LastChange = TimeNow; %last time grating was changed. Used for oscillating while loop
+%                 while (LastChange == TimeNow) || ((expParams.OneOscillation_sec_4Hz) >= (TimeNow - LastChange))
+%                     
+%                     %DRAW GRATING
+%                     Screen('DrawTexture',win,Grating_Txt1); %already created the texture
+%                     
+%                     %DRAW CIRCLE
+%                     Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
+%                     
+%                     %DRAW FIXATION LINES
+%                     Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
+%                     
+%                     %BEEPER - indicate test spot is about to be presented
+%                     if FirstSpotLoop == 1
+%                         Beeper(expParams.TestBeepFq,expParams.TestBeepVol,expParams.TestBeepDur_s);
+%                         FirstSpotLoop = 0;
+%                     end
+%                     
+%                     %DRAW TEST SPOT
+%                     Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
+%                     
+%                     Screen('Flip', win);
+%                                       
+%                     TimeNow = GetSecs;
+%                 end
+%                 
+%                 %BAR 2 SERIES
+%                 LastChange = TimeNow; %last time grating was changed. Used for oscillating while loop
+%                 while (LastChange == TimeNow) || (expParams.OneOscillation_sec_4Hz >= (TimeNow - LastChange))
+%                     %DRAW GRATING
+%                     Screen('DrawTexture',win,Grating_Txt2);
+%                     
+%                     %DRAW CIRCLE
+%                     Screen('FillOval',win,expParams.CircLum,CircPos); %the circle is drawn in a box of the width and height of the circle
+%                     
+%                     %DRAW FIXATION LINES
+%                     Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
+%                     
+%                     %DRAW TEST SPOT
+%                     Screen('FillOval',win,SpotLum,TestSpotPos); %the circle is drawn in a box of the width and height of the circle
+%                     
+%                     Screen('Flip', win);
+%                                         
+%                     TimeNow = GetSecs;
+%                 end
+%                 
+%             end %test spot presentation
+%         end %trial duration
         
         
         %RESPONSE LOOP - subj indicates if they saw the test spot
@@ -1138,6 +1271,7 @@ if TrialCounter == expParams.TotalTrials
     CircSave_file = 'LastCircPos_px.mat';
     Circfilename = [CircSavdir CircSave_file];
     save(Circfilename,'LastCircPos_px');
+    
 else %if experiment has been ended prematurely
     %SAVE DATA & PARAMETERS
     TotTrial = num2str(expParams.TotalTrials);
