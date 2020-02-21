@@ -39,6 +39,7 @@ expParams.AdjustIncrement_px = 35;%30;
 expParams.TestSpotDiam_dg = 0.38; %visual angle of test spot
 expParams.TestSpotDiam_px = expParams.displayPixelsPerDegree.*expParams.TestSpotDiam_dg; %diameter in pxiels
 expParams.TestSpotRad_px = expParams.TestSpotDiam_px./2; %radius of test spot
+expParams.TestSpotDur_Sec = 0.1; %100ms
 
 %FIXATION LINE - 4 tick marks will be around the circl eto direct the
 %participant's gaze to the center of the circle
@@ -53,10 +54,14 @@ st.yCoords = [0,0,st.FixLinePos1_px,st.FixLinePos2_px,0,0,-st.FixLinePos1_px,-st
 st.AllCoords = [st.xCoords; st.yCoords];
 
 
-%GREATING OSCILLATION
-expParams.OneOscillation_sec_4Hz = 1./4; %the lines swich from black to white 4 times in 1 sec (black white black white)
-expParams.OneOscillation_sec_10Hz = 1./10;
-expParams.OneOscillation_sec_15Hz = 1./15;
+%GREATING OSCILLATION/FLICKER
+expParams.flickerDuration_Sec = 1.1; %duration the grating flickers
+expParams.OneOscillation_sec_4Hz = 4; %the lines swich from black to white 4 times in 1 sec (black white black white)
+expParams.OneOscillation_sec_10Hz = 10;
+expParams.OneOscillation_sec_15Hz = 15;
+expParams.FlickerRt_Hz = [0, 0, 15, expParams.OneOscillation_sec_10Hz, expParams.OneOscillation_sec_15Hz]; %later index into this array%the first two conditions do not need a flicker rate
+%expParams.FlickerRt_Hz = [0, 0, expParams.OneOscillation_sec_4Hz, expParams.OneOscillation_sec_10Hz, expParams.OneOscillation_sec_15Hz]; %later index into this array%the first two conditions do not need a flicker rate
+
 
 %BEEPER - there is a beep before test spot is presented and after response is recorded
 expParams.TestBeepFq = 400;
