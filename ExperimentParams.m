@@ -6,16 +6,11 @@ function [expParams,st] = ExperimentParams(expParams)
 %TRIALS & CONDITIONS
 expParams.NumbOfCond = 5;
 %trials per condition - if you wanted a different number of trials per condition
-expParams.TrialNumb_GreyField = 0;
-expParams.TrialNumb_Grating0Hz = 0;
+expParams.TrialNumb_GreyField = expParams.TrialsPerStaircase;
+expParams.TrialNumb_Grating0Hz = expParams.TrialsPerStaircase;
 expParams.TrialNumb_Grating4Hz = expParams.TrialsPerStaircase;
-expParams.TrialNumb_Grating10Hz = 0;
-expParams.TrialNumb_Grating15Hz = 0;
-% expParams.TrialNumb_GreyField = expParams.TrialsPerStaircase;
-% expParams.TrialNumb_Grating0Hz = expParams.TrialsPerStaircase;
-% expParams.TrialNumb_Grating4Hz = expParams.TrialsPerStaircase;
-% expParams.TrialNumb_Grating10Hz = expParams.TrialsPerStaircase;
-% expParams.TrialNumb_Grating15Hz = expParams.TrialsPerStaircase;
+expParams.TrialNumb_Grating10Hz = expParams.TrialsPerStaircase;
+expParams.TrialNumb_Grating15Hz = expParams.TrialsPerStaircase;
 %total trials
 expParams.TotalTrials = (expParams.TrialNumb_GreyField + expParams.TrialNumb_Grating0Hz + expParams.TrialNumb_Grating4Hz + ...
                         expParams.TrialNumb_Grating10Hz + expParams.TrialNumb_Grating15Hz).*expParams.NumbOfStaircasesPerCond;
@@ -59,18 +54,13 @@ expParams.flickerDuration_Sec = 1.1; %duration the grating flickers
 expParams.OneOscillation_sec_4Hz = 4; %the lines swich from black to white 4 times in 1 sec (black white black white)
 expParams.OneOscillation_sec_10Hz = 10;
 expParams.OneOscillation_sec_15Hz = 15;
-expParams.FlickerRt_Hz = [0, 0, 15, expParams.OneOscillation_sec_10Hz, expParams.OneOscillation_sec_15Hz]; %later index into this array%the first two conditions do not need a flicker rate
-%expParams.FlickerRt_Hz = [0, 0, expParams.OneOscillation_sec_4Hz, expParams.OneOscillation_sec_10Hz, expParams.OneOscillation_sec_15Hz]; %later index into this array%the first two conditions do not need a flicker rate
+expParams.FlickerRt_Hz = [0, 0, expParams.OneOscillation_sec_4Hz, expParams.OneOscillation_sec_10Hz, expParams.OneOscillation_sec_15Hz]; %later index into this array%the first two conditions do not need a flicker rate
 
 
-%BEEPER - there is a beep before test spot is presented and after response is recorded
-expParams.TestBeepFq = 400;
-expParams.TestBeepVol = 1;
-expParams.TestBeepDur_s = 0.1;
-%response beeper
+%BEEPER - there is a beep after response is recorded
 expParams.RespBeepFq = 250;
-expParams.RespBeepVol = 9;
-expParams.RespBeepDur_s = 0.25;
+expParams.RespBeepVol = 10;
+expParams.RespBeepDur_s = 0.1;
  
 %TRIAL SEQUENCE SPECIFICATIONS
 expParams.TrialDuration_s = 1.1;
@@ -89,7 +79,10 @@ expParams.Staircase.Grain = 0.01; %step size of the internal table, 0.01. ???
 expParams.Staircase.Range = 5; %5 recommended by PTB. The difference bw the largest and smallet intensity that the intital table can store
 
 
-
+%Flipping text
+expParams.HFlip = 1;
+expParams.VFlip = 0;
+expParams.TxtCenter = 120; %used to center the text
 
 end
 

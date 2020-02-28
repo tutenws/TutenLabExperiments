@@ -56,8 +56,29 @@ YCircPos = LastCircPos_px.y; %y val in pix of center of circle
 %TIMING - record time experiment started
 data.StartTime = datestr(clock,'mm_dd_yy_HHMM');
 
-%% Response setup
-%create two matricies one to store luminance and one for responses for all staircases for
+
+%% Set up Psychtoolbox window
+
+%WINDOW PERAMETERS
+%Identify the Number of screens
+ScreenID = max(Screen('Screens')); %the largest number will be the screen that the stim is drawn to
+  
+ %WHICH SCREEN TO DRAW ON
+ [win]=Screen('OpenWindow',ScreenID); %window fills screen
+ %[win]=Screen('OpenWindow',ScreenID,[],[0 0 1000 1000]); 
+ 
+%WINDOW DIMENTION IN PX 
+[expParams.winXpx, expParams.winYpx]=Screen('WindowSize',ScreenID);
+%Record visual angle of the window
+expParams.WinWidth_dg=expParams.winXpx./expParams.displayPixelsPerDegree;
+expParams.WinHeight_dg=expParams.winYpx./expParams.displayPixelsPerDegree;
+
+%PIXELS IN THE CENTER OF THE WINDOW
+[Xwincent, Ywincent] = RectCenter([0 0 expParams.winXpx expParams.winYpx]);
+
+
+%% Response Matrix setup
+%create two matrices one to store luminance and one for responses for all staircases for
 %all conditions.
 
 %LUMINANCE & RESPONSE ARRAYS
@@ -97,26 +118,6 @@ end
 %if there is one or two staircases per condition
 
 
-%% Set up Psychtoolbox window
-
-%WINDOW PERAMETERS
-%Identify the Number of screens
-ScreenID = max(Screen('Screens')); %the largest number will be the screen that the stim is drawn to
-  
- %WHICH SCREEN TO DRAW ON
- [win]=Screen('OpenWindow',ScreenID); %window fills screen
- %[win]=Screen('OpenWindow',ScreenID,[],[0 0 1000 1000]); 
- 
-%WINDOW DIMENTION IN PX 
-[expParams.winXpx, expParams.winYpx]=Screen('WindowSize',ScreenID);
-%Record visual angle of the window
-expParams.WinWidth_dg=expParams.winXpx./expParams.displayPixelsPerDegree;
-expParams.WinHeight_dg=expParams.winYpx./expParams.displayPixelsPerDegree;
-
-%PIXELS IN THE CENTER OF THE WINDOW
-[Xwincent, Ywincent] = RectCenter([0 0 expParams.winXpx expParams.winYpx]);
-
-
 
 %% Preparation to Draw Grating
 
@@ -153,7 +154,7 @@ while PadResp == 0
     
     %DRAW TEXT
     %Screen('Preferences','DefaultFontSize',[12]); %does not work
-    DrawFormattedText(win,'Stimulus Position Adjustment Procedure. Press any button to Continue','center','center',[],[],[],0);
+    DrawFormattedText(win,'Stimulus Position Adjustment Procedure. Press any button to Continue','center','center',[],[],expParams.HFlip,expParams.VFlip);
     %1 - flips text across the horizontal axis so text looks right side up when projected to eye
     
     Screen('DrawingFinished',win);
@@ -199,8 +200,8 @@ while CircAdjustLoop == 1  %adjusting the circle.
     Screen('DrawLines',win,st.AllCoords,expParams.FixLineWidth_px,expParams.FixLineRGB,[XCircPos,YCircPos]);
     
     %INSTRUCTIONS
-    DrawFormattedText(win,'Use buttons Y,B,X, and A to center the circle',(XCircPos-(expParams.CircDiam_px./2)+20),(YCircPos-60),[],[],[],0);
-    DrawFormattedText(win,'Once centered, press the right upper trigger',(XCircPos-(expParams.CircDiam_px./2)+20),(YCircPos+40),[],[],[],0);
+    DrawFormattedText(win,'Use buttons Y,B,X, and A to center the circle',(XCircPos-(expParams.CircDiam_px./2)+20),(YCircPos-60),[],[],expParams.HFlip,expParams.VFlip);
+    DrawFormattedText(win,'Once centered, press the right upper trigger',(XCircPos-(expParams.CircDiam_px./2)+20),(YCircPos+40),[],[],expParams.HFlip,expParams.VFlip);
     %corrdinates used to center the text within the circle
     
     Screen('DrawingFinished',win); %all items drawn to screen. optimizes drawing.
@@ -387,9 +388,6 @@ numberOfFramesTexutre = round(FrameRate.*expParams.flickerDuration_Sec);
 
 
 
-
-
-
 %% Randomize Trial Order 
 %The conditions should be interleaved
 %Experimental Conditions: (1 or 6) Grey Field (2 or 7) Flickering grating at 0Hz,   
@@ -410,11 +408,8 @@ data.TrialSequences.RandTrialSequence = TrialArray(randperm(length(TrialArray)))
 
 %STAIRCASE RANDOMIZATION
 %if there is more than one staircase per condition, this is an array to
-%randomly determine which staircase each trial belongs to. This way all of
+%randomly determine which staircase each trial belongs to. This way, all of
 %the trials for all of the staircases are interleaved.
-
-%I think this code will be fine to run even if we only have one staircase
-%per condition it will be uncessary but it won't mess anything up.
     for stairnumb = 1:expParams.NumbOfStaircasesPerCond
         %array with number of stiars
         StairArray(1,stairnumb) = stairnumb; %if 2 staircases per cond the array will be [1 2]
@@ -465,7 +460,7 @@ while FirstRun == 1 %first run of experiment
     Screen('FillRect',win,[128,128,128]); %grey background
     
     %DRAW TEXT
-    DrawFormattedText(win,'Main Experiment. Press any button to Continue',(XCircPos-(expParams.CircDiam_px./2)+20),YCircPos,[],[],[],0);
+    DrawFormattedText(win,'Main Experiment. Press any button to Continue',(XCircPos-250),YCircPos,[],[],expParams.HFlip,expParams.VFlip);
     %1 - flips text across the horizontal axis so text looks right side up when projected to eye
     %Xpos and Ypos are the center position for the circle. the text is being drawn in the middle of the circle
     
@@ -516,20 +511,18 @@ while ExptLoop == 1
     TrialCounter = TrialCounter + 1; %counts how many conditions we have done
     CondType = data.TrialSequences.RandTrialSequence(TrialCounter); %goes through the random condition array to choose the next condition type
    
-    %FLICKER VARIABLES / CALCULATIONS
+    %FLICKER VARIABLES & CALCULATIONS
     if CondType == 3 || CondType == 4 || CondType == 5 %flicker conditions
-        
+        %FLICKER VARIABLES
         NumberOfFramesTexture = round(FrameRate.*expParams.flickerDuration_Sec); %number of frames in the flicker duration
         FlickerPeriod_Sec = 1/(2.*expParams.FlickerRt_Hz(CondType)); %time for one image change(half cycle/double the flicker)
             %if 4Hz, the image will change and then go back (one cycle) 4 times in 1 sec
         FlickerPeriodFrames = round(FlickerPeriod_Sec.*FrameRate); %number of frames in a half cycle of flicker (one change)
         NumbFlickerCycles = ceil(expParams.flickerDuration_Sec.*expParams.FlickerRt_Hz(CondType));
             %number of times the stimulus can flicker(one cycle) in the presentation duration.
-        %spot variables
+        %SPOT VARIABLES
         SpotDurationFrames = round(expParams.TestSpotDur_Sec.*FrameRate); %Number of frames in the test spot duration
-        
-        %Locate the frame at the test spot onset
-        StartFrame = floor((NumberOfFramesTexture./2) - (SpotDurationFrames./2));
+        StartSpot = floor((NumberOfFramesTexture./2) - (SpotDurationFrames./2));%Locate the frame at the test spot onset
         
         %VECTORS FOR FLICKER GENERATION
         %generate two sequences one which represents the flickering of the grating
@@ -541,7 +534,7 @@ while ExptLoop == 1
         FlickerSequence = repmat(Sequence, [1 NumbFlickerCycles]); %repeat the sequence the number of times the stimulus can flicker in the flicker duration
         %Spot sequence - series of 0s and 2s
         SpotSequence = zeros(size(FlickerSequence)); %array the same length as the flicker sequence
-        SpotSequence(StartFrame:StartFrame+SpotDurationFrames) = 2; %place 2s in the position of the spot onset and full duration
+        SpotSequence(StartSpot:StartSpot+SpotDurationFrames) = 2; %place 2s in the position of the spot onset and full duration
         
         %Add the spot and flicker sequence togeather to create a vector that
         %you can index into to identify the texture that needs to be presented
@@ -553,210 +546,7 @@ while ExptLoop == 1
         end
     end
     
-    
-    
-   
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% GRATING FLICKER 4 HZ %%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    if CondType == 3 && EscapeExp < 1 %Grating Flicker 4Hz
-        
-        %CONDITION COUNTER
-        Grating4Hz_Counter = Grating4Hz_Counter + 1; %keeps track of how many times we have gone through this condition
-        
-        %WHICH STAIRCASE - only coded for two staircases
-        %if there is more than one staircase, then we have do determine
-        %which staircase will be assigned this trial
-        WhichStair = data.TrialSequences.RandStairSeq_Grating4Hz(Grating4Hz_Counter);
-        %Trial counters for each staircase
-        if WhichStair == 1
-            Grating4Hz_StairCounter1 = Grating4Hz_StairCounter1 + 1;
-        end
-        if WhichStair == 2
-            Grating4Hz_StairCounter2 = Grating4Hz_StairCounter2 + 1;
-        end
-        
-        %DETERMINE TEST SPOT LUMINANCE
-        SpotLum_logU = QuestMean(data.StairFunc(CondType , WhichStair)); %still in log units
-            %row-conditions col-staircases
-        SpotLumVal = ((10^(QuestMean(data.StairFunc(CondType , WhichStair)))).*255)+st.CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
-        %the luminance of the suround circle is added to the spot lum which it will be presented on
-        SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
-        
-        %CREATE IMAGE TEXTURES - only for test spot greatings
-        %textures have already been made for the frames with no test spot.
-        %Create the test spot textures with the updated test spot
-        %luminance
-        GratingSpot_Crop1(testspotLayer>0) = SpotLumVal; %replaces position of spot in test spot layer with a test spot with determined luminance
-        GratingSpot_Crop2(testspotLayer>0) = SpotLumVal; %second crop used for flicker
-        %Create Texture
-        tex(3) = Screen('MakeTexture',win,GratingSpot_Crop1);
-        tex(4) = Screen('MakeTexture',win,GratingSpot_Crop2);
-        
-        %DRAW FLICKER WITH TEST SPOTS
-        %four textures have already been created as well as a vector
-        %"VideoSequence" whose numbers correspond to the sequence of frames 
-        %that will be presented 
-        %Diagnostic verables
-        v2 = zeros(NumberOfFramesTexture,1);%????
-        s2 = v2;
-        f2 = v2;
-        m2 = v2;
 
-        for FrameNumber = 1:length(VideoSequence)
-            Screen('DrawTexture', win, tex(VideoSequence(FrameNumber)))
-            [v2(FrameNumber),s2(FrameNumber),m2(FrameNumber)] = Screen('Flip',win);
-        end
-
-        
-        % Diagnostic plots
-        figure, 
-        %plot(1:FrameNumber-1, 1000.*diff(s), '-', 'LineWidth', 2);
-        hold on, plot(1:NumberOfFramesTexture-1, 1000.*diff(s2), '-', 'LineWidth', 2);
-        xlabel('Frame Number', 'FontSize', 14);
-        ylabel('Inter-stimulus interval (ms)', 'FontSize', 14);
-        plot([1 FrameNumber-1], 1000.*[ifi ifi], 'k:', 'LineWidth', 3);
-        ylim([0 2000.*ifi]);
-        legend('Scripted textures', 'Expected ifi');
-        
-        
-        %RESPONSE LOOP - subj indicates if they saw the test spot
-        RespLoop = 1;
-        while RespLoop == 1
-            
-            %DRAW GREY RECTANGLE
-            Screen('FillRect',win,[128,128,128]); %grey background
-            
-            %DRAW TEXT
-            DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(XCircPos-(expParams.CircDiam_px./2)+20),YCircPos,[],[],[],0);
-            
-            Screen('Flip', win);
-            
-            %BUTTON PRESS CHECK
-            GamePad = GamePadInput([]);
-            if GamePad.buttonChange == 1 %Game pad button press check
-                
-                if GamePad.buttonY == 1 %subject saw the stimulus
-                    
-                    %UPDATE STAIRCASE
-                    data.StairFunc(CondType,WhichStair) = QuestUpdate(data.StairFunc(CondType,WhichStair),SpotLum_logU,1); %updates the stair case
-                        %index to col-condition type, row-which staircase 
-                        %1 - subject saw the stimulus
-                    
-                    %RESPONSE BEEP - to indicate response has been recorded
-                    Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
-                    
-                    %SAVE LUMINANCE & RESPONSE
-                    %record the luminance and response of different staircases
-                     if WhichStair == 1
-                        %LUMINANCE        
-                        data.TestLuminance{(Grating4Hz_StairCounter1+1),index4HzS1} = SpotLumVal;
-                            %have to add one to the row bec there are labels are in row 1
-                            %row-trials, col-conditions & stairs
-                        %save the luminance in log units
-                        data.TestLuminance_logU{(Grating4Hz_StairCounter1+1),index4HzS1} = SpotLum_logU;   
-                        %RESPONSE
-                        data.Response{(Grating4Hz_StairCounter1+1),index4HzS1} = 1; %1-subject saw the stimulus
-                    end
-                    if WhichStair == 2
-                        %LUMINANCE
-                        data.TestLuminance{(Grating4Hz_StairCounter2+1),index4HzS2} = SpotLumVal;
-                            %have to add one to the row bec there are labels are in row 1
-                            %row-trials, col-conditions & stairs
-                        %save the luminance in log units
-                        data.TestLuminance_logU{(Grating4Hz_StairCounter2+1),index4HzS2} = SpotLum_logU;   
-                        %RESPONSE
-                        data.Response{(Grating4Hz_StairCounter2+1),index4HzS2} = 1; %1-subject saw the stimulus
-                    end
-                    RespLoop = 0; %end loop
-                    InitiateNextTrial = 1;
-                end
-                if GamePad.buttonA == 1 %subject did not see the stimulus
-                    
-                    %UPDATE STAIRCASE
-                    data.StairFunc(CondType,WhichStair) = QuestUpdate(data.StairFunc(CondType,WhichStair),SpotLum_logU,0); %updates the stair case
-                    %0 - subject did not see the stimulus
-                    
-                    %RESPONSE BEEP - to indicate response has been recorded
-                    Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
-                    
-                    %SAVE LUMINANCE & RESPONSE
-                    %record the luminance and response of the different staircases
-                    if WhichStair == 1
-                        %LUMINANCE        
-                        data.TestLuminance{(Grating4Hz_StairCounter1+1),index4HzS1} = SpotLumVal;
-                            %have to add one to the row bec there are labels are in row 1
-                            %row-trials, col-conditions & stairs
-                        %save the luminance in log units
-                        data.TestLuminance_logU{(Grating4Hz_StairCounter1+1),index4HzS1} = SpotLum_logU;   
-                        %RESPONSE
-                        data.Response{(Grating4Hz_StairCounter1+1),index4HzS1} = 0; %0-subject did not see the stimulus
-                    end
-                    if WhichStair == 2
-                        %LUMINANCE
-                        data.TestLuminance{(Grating4Hz_StairCounter2+1),index4HzS2} = SpotLumVal;
-                            %have to add one to the row bec there are labels are in row 1
-                            %row-trials, col-conditions & stairs
-                        %save the luminance in log units
-                        data.TestLuminance_logU{(Grating4Hz_StairCounter2+1),index4HzS2} = SpotLum_logU;   
-                        %RESPONSE
-                        data.Response{(Grating4Hz_StairCounter2+1),index4HzS2} = 0; %0-subject did not see the stimulus
-                    end
-                    RespLoop = 0; %end resp loop
-                    InitiateNextTrial = 1; %initates a grey screen and next trial
-                end
-                
-                %ESCAPE EXPERIMENT
-                if GamePad.buttonLeftLowerTrigger == 1
-                    InitiateNextTrial = 0; %prevents presentation of grey screen
-                    RespLoop = 0; %end loop
-                    CondType = 0;
-                    ExptLoop = 0;%end experiment loop
-                    EscapeExp = 1;
-                    break
-                end
-                
-                %GREY SCREEN BEFORE NEXT TRIAL
-                if InitiateNextTrial == 1 %grey screen before next trial
-                    
-                    %DRAW GREY RECTANGLE
-                    Screen('FillRect',win,[128,128,128]); %grey background
-                    
-                    Screen('DrawingFinished',win);
-                    Screen('Flip',win);
-                    
-                    %GAME PAD CHECK
-                    GamePad = GamePadInput([]); %checks game pad
-                    if GamePad.buttonChange == 1 %any button pressed
-                        InitiateNextTrial = 0; %end initiate trial loop
-                    end
-                end %grey screen
-            end%button press check
-        end %response loop
-        
-        %RECORD THE COMPLETED TRIAL - if subj ends mid experiment this will tell
-        %us which conditions the subject has completed
-        if EscapeExp == 0 %subject has not escaped the experiment
-            data.TrialSequencesCompleted.TrialSequence(1,TrialCounter) = CondType; %records the condition sequence that has been completed
-            %record stair sequences completed
-            if WhichStair == 1
-                %indexes into an array 
-                data.TrialSequencesCompleted.StairSequence_Greating4Hz(Grating4Hz_StairCounter1,WhichStair) = WhichStair;
-                %row-trials col-staircase
-            end
-            if WhichStair == 2
-                data.TrialSequencesCompleted.StairSequence_Greating4Hz(Grating4Hz_StairCounter2,WhichStair) = WhichStair;
-                %row-trials col-staircase
-            end
-        end
-        
-        CondType = 0; %end condition loop
-    end %Greating 4 Hz condition    
-    
-    
-    
-    
-    
-    
     
     
     
@@ -821,18 +611,16 @@ while ExptLoop == 1
                 
             end %test spot presentation
         end %trial duration
-        
-        
-        
+
         %RESPONSE LOOP - subj indicates if they saw the test spot
         RespLoop = 1;
         while RespLoop == 1
             
             %DRAW GREY RECTANGLE
             Screen('FillRect',win,[128,128,128]); %grey background
-            
+  
             %DRAW TEXT
-            DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(XCircPos-(expParams.CircDiam_px./2)+20),YCircPos,[],[],[],0);
+            DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(XCircPos-(expParams.CircDiam_px./2)-expParams.TxtCenter),YCircPos,[],[],expParams.HFlip,expParams.VFlip);
             
             Screen('Flip', win);
             
@@ -942,16 +730,7 @@ while ExptLoop == 1
         %us which conditions the subject has completed
         if EscapeExp == 0 %subject has not escaped the experiment
             data.TrialSequencesCompleted.TrialSequence(1,TrialCounter) = CondType; %records the condition sequence that has been completed
-            %record stair sequences completed
-            if WhichStair == 1
-                %indexes into an array 
-                data.TrialSequencesCompleted.StairSequence_Grey(GreyField_StairCounter1,WhichStair) = WhichStair;
-                %row-trials col-staircase
-            end
-            if WhichStair == 2
-                data.TrialSequencesCompleted.StairSequence_Grey(GreyField_StairCounter2,WhichStair) = WhichStair;
-                %row-trials col-staircase
-            end
+            data.TrialSequencesCompleted.StairSequence_Grey(1,GreyCond_Counter) = WhichStair; %records the order the staircase trials for this cond have been presented in
         end
         
         CondType = 0; %end condition loop
@@ -959,8 +738,7 @@ while ExptLoop == 1
     
     
     
-    
-    
+
     
 %%%%%%%%%%%%%%%%%%%%%%%%% GRATING NO FLICKER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if CondType == 2 && EscapeExp < 1
@@ -1038,7 +816,7 @@ if CondType == 2 && EscapeExp < 1
             Screen('FillRect',win,[128,128,128]); %grey background
             
             %DRAW TEXT
-            DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(XCircPos-(expParams.CircDiam_px./2)+20),YCircPos,[],[],[],0);
+            DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(XCircPos-(expParams.CircDiam_px./2)-expParams.TxtCenter),YCircPos,[],[],expParams.HFlip,expParams.VFlip);
             
             Screen('Flip', win);
             
@@ -1148,16 +926,7 @@ if CondType == 2 && EscapeExp < 1
         %us which conditions the subject has completed
         if EscapeExp == 0 %subject has not escaped the experiment
             data.TrialSequencesCompleted.TrialSequence(1,TrialCounter) = CondType; %records the condition sequence that has been completed
-            %record stair sequences completed
-            if WhichStair == 1
-                %indexes into an array 
-                data.TrialSequencesCompleted.StairSequence_Grating0Hz(Grating0Hz_StairCounter1,WhichStair) = WhichStair;
-                %row-trials col-staircase
-            end
-            if WhichStair == 2
-                data.TrialSequencesCompleted.StairSequence_Grating0Hz(Grating0Hz_StairCounter2,WhichStair) = WhichStair;
-                %row-trials col-staircase
-            end
+            data.TrialSequencesCompleted.StairSequence_Grating0Hz(1,Grating0Hz_Counter) = WhichStair; %records the order the staircase trials for this cond have been presented in
         end
         
         CondType = 0; %end condition loop
@@ -1165,18 +934,521 @@ if CondType == 2 && EscapeExp < 1
 
 
 
-   
-
-
-
-
-
-
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% GRATING FLICKER 4 HZ %%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    if CondType == 3 && EscapeExp < 1 %Grating Flicker 4Hz
+        
+        %CONDITION COUNTER
+        Grating4Hz_Counter = Grating4Hz_Counter + 1; %keeps track of how many times we have gone through this condition
+        
+        %WHICH STAIRCASE - only coded for two staircases
+        %if there is more than one staircase, then we have do determine
+        %which staircase will be assigned this trial
+        WhichStair = data.TrialSequences.RandStairSeq_Grating4Hz(Grating4Hz_Counter);
+        %Trial counters for each staircase
+        if WhichStair == 1
+            Grating4Hz_StairCounter1 = Grating4Hz_StairCounter1 + 1;
+        end
+        if WhichStair == 2
+            Grating4Hz_StairCounter2 = Grating4Hz_StairCounter2 + 1;
+        end
+        
+        %DETERMINE TEST SPOT LUMINANCE
+        SpotLum_logU = QuestMean(data.StairFunc(CondType , WhichStair)); %still in log units
+            %row-conditions col-staircases
+        SpotLumVal = ((10^(QuestMean(data.StairFunc(CondType , WhichStair)))).*255)+st.CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
+        %the luminance of the suround circle is added to the spot lum which it will be presented on
+        SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
+        
+        %CREATE IMAGE TEXTURES - only for test spot greatings
+        %textures have already been made for the frames with no test spot.
+        %Create the test spot textures with the updated test spot
+        %luminance
+        GratingSpot_Crop1(testspotLayer>0) = SpotLumVal; %replaces position of spot in test spot layer with a test spot with determined luminance
+        GratingSpot_Crop2(testspotLayer>0) = SpotLumVal; %second crop used for flicker
+        %Create Texture
+        tex(3) = Screen('MakeTexture',win,GratingSpot_Crop1);
+        tex(4) = Screen('MakeTexture',win,GratingSpot_Crop2);
+        
+        %DRAW FLICKER WITH TEST SPOTS
+        %four textures have already been created as well as a vector
+        %"VideoSequence" whose numbers correspond to the sequence of frames 
+        %that will be presented 
+        for FrameNumber = 1:length(VideoSequence)
+            Screen('DrawTexture', win, tex(VideoSequence(FrameNumber)))
+            Screen('Flip',win);
+        end
+          
+        %RESPONSE LOOP - subj indicates if they saw the test spot
+        RespLoop = 1;
+        while RespLoop == 1
+            
+            %DRAW GREY RECTANGLE
+            Screen('FillRect',win,[128,128,128]); %grey background
+            
+            %DRAW TEXT
+            DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(XCircPos-(expParams.CircDiam_px./2)-expParams.TxtCenter),YCircPos,[],[],expParams.HFlip,expParams.VFlip);
+            
+            Screen('Flip', win);
+            
+            %BUTTON PRESS CHECK
+            GamePad = GamePadInput([]);
+            if GamePad.buttonChange == 1 %Game pad button press check
+                
+                if GamePad.buttonY == 1 %subject saw the stimulus
+                    
+                    %UPDATE STAIRCASE
+                    data.StairFunc(CondType,WhichStair) = QuestUpdate(data.StairFunc(CondType,WhichStair),SpotLum_logU,1); %updates the stair case
+                        %index to col-condition type, row-which staircase 
+                        %1 - subject saw the stimulus
+                    
+                    %RESPONSE BEEP - to indicate response has been recorded
+                    Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
+                    
+                    %SAVE LUMINANCE & RESPONSE
+                    %record the luminance and response of different staircases
+                     if WhichStair == 1
+                        %LUMINANCE        
+                        data.TestLuminance{(Grating4Hz_StairCounter1+1),index4HzS1} = SpotLumVal;
+                            %have to add one to the row bec there are labels are in row 1
+                            %row-trials, col-conditions & stairs
+                        %save the luminance in log units
+                        data.TestLuminance_logU{(Grating4Hz_StairCounter1+1),index4HzS1} = SpotLum_logU;   
+                        %RESPONSE
+                        data.Response{(Grating4Hz_StairCounter1+1),index4HzS1} = 1; %1-subject saw the stimulus
+                    end
+                    if WhichStair == 2
+                        %LUMINANCE
+                        data.TestLuminance{(Grating4Hz_StairCounter2+1),index4HzS2} = SpotLumVal;
+                            %have to add one to the row bec there are labels are in row 1
+                            %row-trials, col-conditions & stairs
+                        %save the luminance in log units
+                        data.TestLuminance_logU{(Grating4Hz_StairCounter2+1),index4HzS2} = SpotLum_logU;   
+                        %RESPONSE
+                        data.Response{(Grating4Hz_StairCounter2+1),index4HzS2} = 1; %1-subject saw the stimulus
+                    end
+                    RespLoop = 0; %end loop
+                    InitiateNextTrial = 1;
+                end
+                if GamePad.buttonA == 1 %subject did not see the stimulus
+                    
+                    %UPDATE STAIRCASE
+                    data.StairFunc(CondType,WhichStair) = QuestUpdate(data.StairFunc(CondType,WhichStair),SpotLum_logU,0); %updates the stair case
+                    %0 - subject did not see the stimulus
+                    
+                    %RESPONSE BEEP - to indicate response has been recorded
+                    Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
+                    
+                    %SAVE LUMINANCE & RESPONSE
+                    %record the luminance and response of the different staircases
+                    if WhichStair == 1
+                        %LUMINANCE        
+                        data.TestLuminance{(Grating4Hz_StairCounter1+1),index4HzS1} = SpotLumVal;
+                            %have to add one to the row bec there are labels are in row 1
+                            %row-trials, col-conditions & stairs
+                        %save the luminance in log units
+                        data.TestLuminance_logU{(Grating4Hz_StairCounter1+1),index4HzS1} = SpotLum_logU;   
+                        %RESPONSE
+                        data.Response{(Grating4Hz_StairCounter1+1),index4HzS1} = 0; %0-subject did not see the stimulus
+                    end
+                    if WhichStair == 2
+                        %LUMINANCE
+                        data.TestLuminance{(Grating4Hz_StairCounter2+1),index4HzS2} = SpotLumVal;
+                            %have to add one to the row bec there are labels are in row 1
+                            %row-trials, col-conditions & stairs
+                        %save the luminance in log units
+                        data.TestLuminance_logU{(Grating4Hz_StairCounter2+1),index4HzS2} = SpotLum_logU;   
+                        %RESPONSE
+                        data.Response{(Grating4Hz_StairCounter2+1),index4HzS2} = 0; %0-subject did not see the stimulus
+                    end
+                    RespLoop = 0; %end resp loop
+                    InitiateNextTrial = 1; %initates a grey screen and next trial
+                end
+                
+                %ESCAPE EXPERIMENT
+                if GamePad.buttonLeftLowerTrigger == 1
+                    InitiateNextTrial = 0; %prevents presentation of grey screen
+                    RespLoop = 0; %end loop
+                    CondType = 0;
+                    ExptLoop = 0;%end experiment loop
+                    EscapeExp = 1;
+                    break
+                end
+                
+                %GREY SCREEN BEFORE NEXT TRIAL
+                if InitiateNextTrial == 1 %grey screen before next trial
+                    
+                    %DRAW GREY RECTANGLE
+                    Screen('FillRect',win,[128,128,128]); %grey background
+                    
+                    Screen('DrawingFinished',win);
+                    Screen('Flip',win);
+                    
+                    %GAME PAD CHECK
+                    GamePad = GamePadInput([]); %checks game pad
+                    if GamePad.buttonChange == 1 %any button pressed
+                        InitiateNextTrial = 0; %end initiate trial loop
+                    end
+                end %grey screen
+            end%button press check
+        end %response loop
+        
+        %RECORD THE COMPLETED TRIAL - if subj ends mid experiment this will tell
+        %us which conditions the subject has completed
+        if EscapeExp == 0 %subject has not escaped the experiment
+            data.TrialSequencesCompleted.TrialSequence(1,TrialCounter) = CondType; %records the condition sequence that has been completed
+            data.TrialSequencesCompleted.StairSequence_Grating4Hz(1,Grating4Hz_Counter) = WhichStair; %records the order the staircase trials for this cond have been presented in
+        end
+        
+        CondType = 0; %end condition loop
+    end %Greating 4 Hz condition      
 
 
     
     
     
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% GRATING FLICKER 10 HZ %%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    if CondType == 4 && EscapeExp < 1 %Grating Flicker 10Hz
+        
+        %CONDITION COUNTER
+        Grating10Hz_Counter = Grating10Hz_Counter + 1; %keeps track of how many times we have gone through this condition
+        
+        %WHICH STAIRCASE - only coded for two staircases
+        %if there is more than one staircase, then we have do determine
+        %which staircase will be assigned this trial
+        WhichStair = data.TrialSequences.RandStairSeq_Grating10Hz(Grating10Hz_Counter);
+        %Trial counters for each staircase
+        if WhichStair == 1
+            Grating10Hz_StairCounter1 = Grating10Hz_StairCounter1 + 1;
+        end
+        if WhichStair == 2
+            Grating10Hz_StairCounter2 = Grating10Hz_StairCounter2 + 1;
+        end
+        
+        %DETERMINE TEST SPOT LUMINANCE
+        SpotLum_logU = QuestMean(data.StairFunc(CondType , WhichStair)); %still in log units
+            %row-conditions col-staircases
+        SpotLumVal = ((10^(QuestMean(data.StairFunc(CondType , WhichStair)))).*255)+st.CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
+        %the luminance of the suround circle is added to the spot lum which it will be presented on
+        SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
+        
+        %CREATE IMAGE TEXTURES - only for test spot greatings
+        %textures have already been made for the frames with no test spot.
+        %Create the test spot textures with the updated test spot
+        %luminance
+        GratingSpot_Crop1(testspotLayer>0) = SpotLumVal; %replaces position of spot in test spot layer with a test spot with determined luminance
+        GratingSpot_Crop2(testspotLayer>0) = SpotLumVal; %second crop used for flicker
+        %Create Texture
+        tex(3) = Screen('MakeTexture',win,GratingSpot_Crop1);
+        tex(4) = Screen('MakeTexture',win,GratingSpot_Crop2);
+        
+        %DRAW FLICKER WITH TEST SPOTS
+        %four textures have already been created as well as a vector
+        %"VideoSequence" whose numbers correspond to the sequence of frames 
+        %that will be presented 
+        for FrameNumber = 1:length(VideoSequence)
+            Screen('DrawTexture', win, tex(VideoSequence(FrameNumber)))
+            Screen('Flip',win);
+        end
+        
+        
+        %RESPONSE LOOP - subj indicates if they saw the test spot
+        RespLoop = 1;
+        while RespLoop == 1
+            
+            %DRAW GREY RECTANGLE
+            Screen('FillRect',win,[128,128,128]); %grey background
+            
+            %DRAW TEXT
+            DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(XCircPos-(expParams.CircDiam_px./2)-expParams.TxtCenter),YCircPos,[],[],expParams.HFlip,expParams.VFlip);
+            
+            Screen('Flip', win);
+            
+            %BUTTON PRESS CHECK
+            GamePad = GamePadInput([]);
+            if GamePad.buttonChange == 1 %Game pad button press check
+                
+                if GamePad.buttonY == 1 %subject saw the stimulus
+                    
+                    %UPDATE STAIRCASE
+                    data.StairFunc(CondType,WhichStair) = QuestUpdate(data.StairFunc(CondType,WhichStair),SpotLum_logU,1); %updates the stair case
+                        %index to col-condition type, row-which staircase 
+                        %1 - subject saw the stimulus
+                    
+                    %RESPONSE BEEP - to indicate response has been recorded
+                    Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
+                    
+                    %SAVE LUMINANCE & RESPONSE
+                    %record the luminance and response of different staircases
+                     if WhichStair == 1
+                        %LUMINANCE        
+                        data.TestLuminance{(Grating10Hz_StairCounter1+1),index10HzS1} = SpotLumVal;
+                            %have to add one to the row bec there are labels are in row 1
+                            %row-trials, col-conditions & stairs
+                        %save the luminance in log units
+                        data.TestLuminance_logU{(Grating10Hz_StairCounter1+1),index10HzS1} = SpotLum_logU;   
+                        %RESPONSE
+                        data.Response{(Grating10Hz_StairCounter1+1),index10HzS1} = 1; %1-subject saw the stimulus
+                    end
+                    if WhichStair == 2
+                        %LUMINANCE
+                        data.TestLuminance{(Grating10Hz_StairCounter2+1),index10HzS2} = SpotLumVal;
+                            %have to add one to the row bec there are labels are in row 1
+                            %row-trials, col-conditions & stairs
+                        %save the luminance in log units
+                        data.TestLuminance_logU{(Grating10Hz_StairCounter2+1),index10HzS2} = SpotLum_logU;   
+                        %RESPONSE
+                        data.Response{(Grating10Hz_StairCounter2+1),index10HzS2} = 1; %1-subject saw the stimulus
+                    end
+                    RespLoop = 0; %end loop
+                    InitiateNextTrial = 1;
+                end
+                if GamePad.buttonA == 1 %subject did not see the stimulus
+                    
+                    %UPDATE STAIRCASE
+                    data.StairFunc(CondType,WhichStair) = QuestUpdate(data.StairFunc(CondType,WhichStair),SpotLum_logU,0); %updates the stair case
+                    %0 - subject did not see the stimulus
+                    
+                    %RESPONSE BEEP - to indicate response has been recorded
+                    Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
+                    
+                    %SAVE LUMINANCE & RESPONSE
+                    %record the luminance and response of the different staircases
+                    if WhichStair == 1
+                        %LUMINANCE        
+                        data.TestLuminance{(Grating10Hz_StairCounter1+1),index10HzS1} = SpotLumVal;
+                            %have to add one to the row bec there are labels are in row 1
+                            %row-trials, col-conditions & stairs
+                        %save the luminance in log units
+                        data.TestLuminance_logU{(Grating10Hz_StairCounter1+1),index10HzS1} = SpotLum_logU;   
+                        %RESPONSE
+                        data.Response{(Grating10Hz_StairCounter1+1),index10HzS1} = 0; %0-subject did not see the stimulus
+                    end
+                    if WhichStair == 2
+                        %LUMINANCE
+                        data.TestLuminance{(Grating10Hz_StairCounter2+1),index10HzS2} = SpotLumVal;
+                            %have to add one to the row bec there are labels are in row 1
+                            %row-trials, col-conditions & stairs
+                        %save the luminance in log units
+                        data.TestLuminance_logU{(Grating10Hz_StairCounter2+1),index10HzS2} = SpotLum_logU;   
+                        %RESPONSE
+                        data.Response{(Grating10Hz_StairCounter2+1),index10HzS2} = 0; %0-subject did not see the stimulus
+                    end
+                    RespLoop = 0; %end resp loop
+                    InitiateNextTrial = 1; %initates a grey screen and next trial
+                end
+                
+                %ESCAPE EXPERIMENT
+                if GamePad.buttonLeftLowerTrigger == 1
+                    InitiateNextTrial = 0; %prevents presentation of grey screen
+                    RespLoop = 0; %end loop
+                    CondType = 0;
+                    ExptLoop = 0;%end experiment loop
+                    EscapeExp = 1;
+                    break
+                end
+                
+                %GREY SCREEN BEFORE NEXT TRIAL
+                if InitiateNextTrial == 1 %grey screen before next trial
+                    
+                    %DRAW GREY RECTANGLE
+                    Screen('FillRect',win,[128,128,128]); %grey background
+                    
+                    Screen('DrawingFinished',win);
+                    Screen('Flip',win);
+                    
+                    %GAME PAD CHECK
+                    GamePad = GamePadInput([]); %checks game pad
+                    if GamePad.buttonChange == 1 %any button pressed
+                        InitiateNextTrial = 0; %end initiate trial loop
+                    end
+                end %grey screen
+            end%button press check
+        end %response loop
+        
+        %RECORD THE COMPLETED TRIAL - if subj ends mid experiment this will tell
+        %us which conditions the subject has completed
+        if EscapeExp == 0 %subject has not escaped the experiment
+            data.TrialSequencesCompleted.TrialSequence(1,TrialCounter) = CondType; %records the condition sequence that has been completed
+            data.TrialSequencesCompleted.StairSequence_Grating10Hz(1,Grating10Hz_Counter) = WhichStair; %records the order the staircase trials for this cond have been presented in
+        end
+        
+        CondType = 0; %end condition loop
+    end %Greating 10 Hz condition
+
+
+
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% GRATING FLICKER 15 HZ %%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    if CondType == 5 && EscapeExp < 1 %Grating Flicker 15Hz
+        
+        %CONDITION COUNTER
+        Grating15Hz_Counter = Grating15Hz_Counter + 1; %keeps track of how many times we have gone through this condition
+        
+        %WHICH STAIRCASE - only coded for two staircases
+        %if there is more than one staircase, then we have do determine
+        %which staircase will be assigned this trial
+        WhichStair = data.TrialSequences.RandStairSeq_Grating15Hz(Grating15Hz_Counter);
+        %Trial counters for each staircase
+        if WhichStair == 1
+            Grating15Hz_StairCounter1 = Grating15Hz_StairCounter1 + 1;
+        end
+        if WhichStair == 2
+            Grating15Hz_StairCounter2 = Grating15Hz_StairCounter2 + 1;
+        end
+        
+        %DETERMINE TEST SPOT LUMINANCE
+        SpotLum_logU = QuestMean(data.StairFunc(CondType , WhichStair)); %still in log units
+            %row-conditions col-staircases
+        SpotLumVal = ((10^(QuestMean(data.StairFunc(CondType , WhichStair)))).*255)+st.CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
+        %the luminance of the suround circle is added to the spot lum which it will be presented on
+        SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
+        
+        %CREATE IMAGE TEXTURES - only for test spot greatings
+        %textures have already been made for the frames with no test spot.
+        %Create the test spot textures with the updated test spot
+        %luminance
+        GratingSpot_Crop1(testspotLayer>0) = SpotLumVal; %replaces position of spot in test spot layer with a test spot with determined luminance
+        GratingSpot_Crop2(testspotLayer>0) = SpotLumVal; %second crop used for flicker
+        %Create Texture
+        tex(3) = Screen('MakeTexture',win,GratingSpot_Crop1);
+        tex(4) = Screen('MakeTexture',win,GratingSpot_Crop2);
+        
+        %DRAW FLICKER WITH TEST SPOTS
+        %four textures have already been created as well as a vector
+        %"VideoSequence" whose numbers correspond to the sequence of frames 
+        %that will be presented 
+        for FrameNumber = 1:length(VideoSequence)
+            Screen('DrawTexture', win, tex(VideoSequence(FrameNumber)))
+            Screen('Flip',win);
+        end
+        
+        
+        %RESPONSE LOOP - subj indicates if they saw the test spot
+        RespLoop = 1;
+        while RespLoop == 1
+            
+            %DRAW GREY RECTANGLE
+            Screen('FillRect',win,[128,128,128]); %grey background
+            
+            %DRAW TEXT
+            DrawFormattedText(win,'If you saw the test spot, press "Y". If you did not see the test spot press "A"',(XCircPos-(expParams.CircDiam_px./2)-expParams.TxtCenter),YCircPos,[],[],expParams.HFlip,expParams.VFlip);
+            
+            Screen('Flip', win);
+            
+            %BUTTON PRESS CHECK
+            GamePad = GamePadInput([]);
+            if GamePad.buttonChange == 1 %Game pad button press check
+                
+                if GamePad.buttonY == 1 %subject saw the stimulus
+                    
+                    %UPDATE STAIRCASE
+                    data.StairFunc(CondType,WhichStair) = QuestUpdate(data.StairFunc(CondType,WhichStair),SpotLum_logU,1); %updates the stair case
+                        %index to col-condition type, row-which staircase 
+                        %1 - subject saw the stimulus
+                    
+                    %RESPONSE BEEP - to indicate response has been recorded
+                    Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
+                    
+                    %SAVE LUMINANCE & RESPONSE
+                    %record the luminance and response of different staircases
+                     if WhichStair == 1
+                        %LUMINANCE        
+                        data.TestLuminance{(Grating15Hz_StairCounter1+1),index15HzS1} = SpotLumVal;
+                            %have to add one to the row bec there are labels are in row 1
+                            %row-trials, col-conditions & stairs
+                        %save the luminance in log units
+                        data.TestLuminance_logU{(Grating15Hz_StairCounter1+1),index15HzS1} = SpotLum_logU;   
+                        %RESPONSE
+                        data.Response{(Grating15Hz_StairCounter1+1),index15HzS1} = 1; %1-subject saw the stimulus
+                    end
+                    if WhichStair == 2
+                        %LUMINANCE
+                        data.TestLuminance{(Grating15Hz_StairCounter2+1),index15HzS2} = SpotLumVal;
+                            %have to add one to the row bec there are labels are in row 1
+                            %row-trials, col-conditions & stairs
+                        %save the luminance in log units
+                        data.TestLuminance_logU{(Grating15Hz_StairCounter2+1),index15HzS2} = SpotLum_logU;   
+                        %RESPONSE
+                        data.Response{(Grating15Hz_StairCounter2+1),index15HzS2} = 1; %1-subject saw the stimulus
+                    end
+                    RespLoop = 0; %end loop
+                    InitiateNextTrial = 1;
+                end
+                if GamePad.buttonA == 1 %subject did not see the stimulus
+                    
+                    %UPDATE STAIRCASE
+                    data.StairFunc(CondType,WhichStair) = QuestUpdate(data.StairFunc(CondType,WhichStair),SpotLum_logU,0); %updates the stair case
+                    %0 - subject did not see the stimulus
+                    
+                    %RESPONSE BEEP - to indicate response has been recorded
+                    Beeper(expParams.RespBeepFq,expParams.RespBeepVol,expParams.RespBeepDur_s);
+                    
+                    %SAVE LUMINANCE & RESPONSE
+                    %record the luminance and response of the different staircases
+                    if WhichStair == 1
+                        %LUMINANCE        
+                        data.TestLuminance{(Grating15Hz_StairCounter1+1),index15HzS1} = SpotLumVal;
+                            %have to add one to the row bec there are labels are in row 1
+                            %row-trials, col-conditions & stairs
+                        %save the luminance in log units
+                        data.TestLuminance_logU{(Grating15Hz_StairCounter1+1),index15HzS1} = SpotLum_logU;   
+                        %RESPONSE
+                        data.Response{(Grating15Hz_StairCounter1+1),index15HzS1} = 0; %0-subject did not see the stimulus
+                    end
+                    if WhichStair == 2
+                        %LUMINANCE
+                        data.TestLuminance{(Grating15Hz_StairCounter2+1),index15HzS2} = SpotLumVal;
+                            %have to add one to the row bec there are labels are in row 1
+                            %row-trials, col-conditions & stairs
+                        %save the luminance in log units
+                        data.TestLuminance_logU{(Grating15Hz_StairCounter2+1),index15HzS2} = SpotLum_logU;   
+                        %RESPONSE
+                        data.Response{(Grating15Hz_StairCounter2+1),index15HzS2} = 0; %0-subject did not see the stimulus
+                    end
+                    RespLoop = 0; %end resp loop
+                    InitiateNextTrial = 1; %initates a grey screen and next trial
+                end
+                
+                %ESCAPE EXPERIMENT
+                if GamePad.buttonLeftLowerTrigger == 1
+                    InitiateNextTrial = 0; %prevents presentation of grey screen
+                    RespLoop = 0; %end loop
+                    CondType = 0;
+                    ExptLoop = 0;%end experiment loop
+                    EscapeExp = 1;
+                    break
+                end
+                
+                %GREY SCREEN BEFORE NEXT TRIAL
+                if InitiateNextTrial == 1 %grey screen before next trial
+                    
+                    %DRAW GREY RECTANGLE
+                    Screen('FillRect',win,[128,128,128]); %grey background
+                    
+                    Screen('DrawingFinished',win);
+                    Screen('Flip',win);
+                    
+                    %GAME PAD CHECK
+                    GamePad = GamePadInput([]); %checks game pad
+                    if GamePad.buttonChange == 1 %any button pressed
+                        InitiateNextTrial = 0; %end initiate trial loop
+                    end
+                end %grey screen
+            end%button press check
+        end %response loop
+        
+        %RECORD THE COMPLETED TRIAL - if subj ends mid experiment this will tell
+        %us which conditions the subject has completed
+        if EscapeExp == 0 %subject has not escaped the experiment
+            data.TrialSequencesCompleted.TrialSequence(1,TrialCounter) = CondType; %records the condition sequence that has been completed
+            data.TrialSequencesCompleted.StairSequence_Grating15Hz(1,Grating15Hz_Counter) = WhichStair; %records the order the staircase trials for this cond have been presented in
+        end
+        
+        CondType = 0; %end condition loop
+    end %Greating 15 Hz condition
+
     
     
     %ALL TRIALS COMPLETE - END EXPERIMENT
@@ -1190,7 +1462,7 @@ if CondType == 2 && EscapeExp < 1
             Screen('FillRect',win,[128,128,128]); %grey background
             
             %DRAW TEXT
-            DrawFormattedText(win,'Experiment Finished',(XCircPos-(expParams.CircDiam_px./2)+20),YCircPos,[],[],[],0);
+            DrawFormattedText(win,'Experiment Finished',(XCircPos-(expParams.CircDiam_px./2)+20),YCircPos,[],[],expParams.HFlip,expParams.VFlip);
             %1 - flips text across the horizontal axis so text looks right side up when projected to eye
             
             Screen('DrawingFinished',win);
