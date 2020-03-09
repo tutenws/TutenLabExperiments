@@ -11,7 +11,7 @@ close all;
 clear all;
 clc;
 
-%% Sinc test & OpenGL
+%% Sinc test & OpenGL & Calibration file
 
 % SKIP SYNC TEST
 Screen('Preference', 'SkipSyncTests', 1); 
@@ -20,6 +20,8 @@ Screen('Preference', 'SkipSyncTests', 1);
 %OPENGL
 AssertOpenGL;
 
+%LOAD CALIBRATION FILE
+load cal_03_05_20; %load the calibration file
 
 %% Start by collecting experiment parameters from the command window
 
@@ -67,6 +69,9 @@ ScreenID = max(Screen('Screens')); %the largest number will be the screen that t
  [win]=Screen('OpenWindow',ScreenID); %window fills screen
  %[win]=Screen('OpenWindow',ScreenID,[],[0 0 1000 1000]); 
  
+%LOAD GAMMA TABLE FROM CALIBRATION
+Screen('LoadNormalizedGammaTable',win,cal.lookup_table); 
+
 %WINDOW DIMENTION IN PX 
 [expParams.winXpx, expParams.winYpx]=Screen('WindowSize',ScreenID);
 %Record visual angle of the window
@@ -220,7 +225,7 @@ while CircAdjustLoop == 1  %adjusting the circle.
             YCircPos = YCircPos + expParams.AdjustIncrement_px;
             %GRATING POSITION - you don't need to adjust this because the grating does not change vertically
         end
-        if GamePad.buttonX == 1 %X button press. leftward movement
+        if GamePad.buttonB == 1 %B button press. Rightward movement
             %CIRCLE ADJUSTMENT
             XCircPos = XCircPos - expParams.AdjustIncrement_px;
             %GRATING ADJUSTMENT
@@ -230,7 +235,7 @@ while CircAdjustLoop == 1  %adjusting the circle.
             GratingPos_Crop = Grating(yStartCropPos:expParams.winYpx, xStartCropPos: xEndCropPos);
             
         end
-        if GamePad.buttonB == 1 %B button press. Rightward movement
+        if GamePad.buttonX == 1 %X button press. leftward movement
             %CIRCLE ADJUSTMENT
             XCircPos = XCircPos + expParams.AdjustIncrement_px;
             %GRATING ADJUSTMENT

@@ -80,7 +80,7 @@ expParams.Staircase.Range = 5; %5 recommended by PTB. The difference bw the larg
 
 
 %Flipping text
-expParams.HFlip = 1;
+expParams.HFlip = 1; %flip over horizontal axis
 expParams.VFlip = 0;
 expParams.TxtCenter = 120; %used to center the text
 
