@@ -124,13 +124,13 @@ if ResponseLoop == 0
     %Save the location of the center of the line
     LastLineCent.Xcent = Xcent;
     LastLineCent.Ycent = Ycent;
-    LineSavdir = 'D:\Tuten_Lab\Expt_Masking\Code\TutenLabExperiments\CalibrationStim\';
+    LineSavdir = 'D:\Tuten_Lab\Expt_Masking\Code\TutenLabExperiments\Calibration\';
     LineSave_file = 'LastLineCent.mat';
     Linefilename = [LineSavdir LineSave_file];
     save(Linefilename,'LastLineCent');
     
     %Save responses
-    Savdir = 'D:\Tuten_Lab\Expt_Masking\Code\TutenLabExperiments\CalibrationStim\WindowSize\';
+    Savdir = 'D:\Tuten_Lab\Expt_Masking\Code\TutenLabExperiments\Calibration\WindowSize\';
     Save_file = strcat('WindowSize_px','_',EndTime,'.mat');
     filename = [Savdir Save_file];
     save(filename, 'WindowSize');

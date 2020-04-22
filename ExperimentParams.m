@@ -1,7 +1,8 @@
-function [expParams,st] = ExperimentParams(expParams)
+function [expParams,st] = ExperimentParams(expParams,data)
 %This has all of the experiment parameters for the masking experiment
 %Note: expParam structure will get saved. the st structure will not get
 %saved
+
 
 %TRIALS & CONDITIONS
 expParams.NumbOfCond = 5;
@@ -22,26 +23,31 @@ expParams.TotalTrials = (expParams.TrialNumb_GreyField + expParams.TrialNumb_Gra
 expParams.CircDiam_dg=7;
 %Circle diameter in pixels
 expParams.CircDiam_px=expParams.displayPixelsPerDegree.*expParams.CircDiam_dg;
-expParams.CircRad_px = expParams.CircDiam_px./2;
+expParams.CircRad_px = round(expParams.CircDiam_px./2);
 %Circle Luminance
 expParams.CircLum = [128,128,128];
 st.CircLumVal = expParams.CircLum(1,1); %needed for luminance adjustment of test spot
 %CIRC ADJUSTMENT VARIABLES
-expParams.AdjustIncrement_px = 35;%30;
+expParams.AdjustIncrement_px = 10;%30;
 
 
 %TEST SPOT
 expParams.TestSpotDiam_dg = 0.38; %visual angle of test spot
 expParams.TestSpotDiam_px = expParams.displayPixelsPerDegree.*expParams.TestSpotDiam_dg; %diameter in pxiels
-expParams.TestSpotRad_px = expParams.TestSpotDiam_px./2; %radius of test spot
+expParams.TestSpotRad_px = round(expParams.TestSpotDiam_px./2); %radius of test spot
 expParams.TestSpotDur_Sec = 0.1; %100ms
 
 %FIXATION LINE - 4 tick marks will be around the circl eto direct the
 %participant's gaze to the center of the circle
-expParams.FixLineWidth_px = 2;
-expParams.FixLineLength_px = 100;
-st.FixLinePos1_px = expParams.CircDiam_px./2;
-st.FixLinePos2_px = (expParams.CircDiam_px./2)-expParams.FixLineLength_px;
+expParams.FixLineWidth_dg = 0.06;
+expParams.FixLineLength_dg = 1.4;
+expParams.FixLineWidth_px = round(expParams.displayPixelsPerDegree.*expParams.FixLineWidth_dg);
+expParams.FixLineLength_px = round(expParams.displayPixelsPerDegree.*expParams.FixLineLength_dg); 
+%fixation lines when waiting for a response
+FixLineRespWidth_dg = 0.02;
+expParams.FixLineRespWidth_px = round(FixLineRespWidth_dg.*expParams.displayPixelsPerDegree);
+st.FixLinePos1_px = expParams.CircRad_px;
+st.FixLinePos2_px = expParams.CircRad_px-expParams.FixLineLength_px;
 expParams.FixLineRGB = [0,0,0];
 %determine coordinates of the fixation lines
 st.xCoords = [-st.FixLinePos1_px,-st.FixLinePos2_px,0,0,st.FixLinePos1_px,st.FixLinePos2_px,0,0];
@@ -58,8 +64,8 @@ expParams.FlickerRt_Hz = [0, 0, expParams.OneOscillation_sec_4Hz, expParams.OneO
 
 
 %BEEPER - there is a beep after response is recorded
-expParams.RespBeepFq = 250;
-expParams.RespBeepVol = 10;
+expParams.RespBeepFq = 300; %210
+expParams.RespBeepVol = 3;
 expParams.RespBeepDur_s = 0.1;
  
 %TRIAL SEQUENCE SPECIFICATIONS
@@ -79,10 +85,19 @@ expParams.Staircase.Grain = 0.01; %step size of the internal table, 0.01. ???
 expParams.Staircase.Range = 5; %5 recommended by PTB. The difference bw the largest and smallet intensity that the intital table can store
 
 
-%Flipping text
-expParams.HFlip = 1; %flip over horizontal axis
-expParams.VFlip = 0;
-expParams.TxtCenter = 120; %used to center the text
+%TEXT VARIABLES
+if data.HomeVersion == 1 
+    expParams.HFlip = 0; %do not flip text on the home version
+    expParams.VFlip = 0;
+else
+    expParams.HFlip = 1; %flip over horizontal axis
+    expParams.VFlip = 0;
+    
+end
+expParams.textSize = 50;
+expParams.XTxtCenter = 400; %used to center the text
+expParams.YTxtCenter = expParams.CircRad_px + 20;
+
 
 end
 

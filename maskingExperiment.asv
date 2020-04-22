@@ -606,7 +606,6 @@ while ExptLoop == 1
             %row-conditions col-staircases
         SpotLumVal = ((10^(QuestMean(data.StairFunc(CondType , WhichStair)))).*255)+st.CircLumVal; %Quest outputs a intensity value in 0-1 range. The equation converts it to 0-255 range by multiplying by 255
         %the luminance of the suround circle is added to the spot lum which it will be presented on
-        %Limit the luminance of the test spot
         if SpotLumVal > 255 %test spot cannot be greater than 255
             SpotLumVal = 255;
         end
@@ -816,13 +815,6 @@ if CondType == 2 && EscapeExp < 1
             %row-conditions col-staircases
         SpotLumVal = ((10^(QuestMean(data.StairFunc(CondType , WhichStair)))).*255)+st.CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
         %the luminance of the suround circle is added to the spot lum which it will be presented on
-        %Limit the luminance of the test spot
-        if SpotLumVal > 255 %test spot cannot be greater than 255
-            SpotLumVal = 255;
-        end
-        if SpotLumVal < st.CircLumVal %spot luminance cannot be lower the circle luminance
-            SpotLumVal = st.CircLumVal;
-        end
         SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
         
         
@@ -1032,13 +1024,6 @@ if CondType == 2 && EscapeExp < 1
             %row-conditions col-staircases
         SpotLumVal = ((10^(QuestMean(data.StairFunc(CondType , WhichStair)))).*255)+st.CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
         %the luminance of the suround circle is added to the spot lum which it will be presented on
-        %Limit the luminance of the test spot
-        if SpotLumVal > 255 %test spot cannot be greater than 255
-            SpotLumVal = 255;
-        end
-        if SpotLumVal < st.CircLumVal %spot luminance cannot be lower the circle luminance
-            SpotLumVal = st.CircLumVal;
-        end
         SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
         
         %CREATE IMAGE TEXTURES - only for test spot greatings
@@ -1225,13 +1210,6 @@ if CondType == 2 && EscapeExp < 1
             %row-conditions col-staircases
         SpotLumVal = ((10^(QuestMean(data.StairFunc(CondType , WhichStair)))).*255)+st.CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
         %the luminance of the suround circle is added to the spot lum which it will be presented on
-        %Limit the luminance of the test spot
-        if SpotLumVal > 255 %test spot cannot be greater than 255
-            SpotLumVal = 255;
-        end
-        if SpotLumVal < st.CircLumVal %spot luminance cannot be lower the circle luminance
-            SpotLumVal = st.CircLumVal;
-        end
         SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
         
         %CREATE IMAGE TEXTURES - only for test spot greatings
@@ -1416,13 +1394,6 @@ if CondType == 2 && EscapeExp < 1
             %row-conditions col-staircases
         SpotLumVal = ((10^(QuestMean(data.StairFunc(CondType , WhichStair)))).*255)+st.CircLumVal; %outputs a intensity value in 0-1 range. Then convert to 0-255 range by multiplying by 255
         %the luminance of the suround circle is added to the spot lum which it will be presented on
-        %Limit the luminance of the test spot
-        if SpotLumVal > 255 %test spot cannot be greater than 255
-            SpotLumVal = 255;
-        end
-        if SpotLumVal < st.CircLumVal %spot luminance cannot be lower the circle luminance
-            SpotLumVal = st.CircLumVal;
-        end
         SpotLum = repelem(SpotLumVal,3); %repeat the number 3 times for RGB vlaue
         
         %CREATE IMAGE TEXTURES - only for test spot greatings
