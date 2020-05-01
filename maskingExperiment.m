@@ -20,9 +20,6 @@ Screen('Preference', 'SkipSyncTests', 1);
 %OPENGL
 AssertOpenGL;
 
-%LOAD CALIBRATION FILE
-load cal_03_05_20; %load the calibration file
-
 %% Start by collecting experiment parameters from the command window
 
 %SUBJ ID
@@ -47,8 +44,7 @@ expParams.TrialsPerStaircase = GetWithDefault('Number of trials per stiarcase', 
 %when using hte projector the screen is actually 71.7 ppd but we had to multiply by 2 because that
 %is how matlab is coding the ppd. 
 if data.HomeVersion==1
-    %*****Correct ppd
-    expParams.displayPixelsPerDegree = GetWithDefault('Enter display scaling (ppd) ', 148);%9.7
+    expParams.displayPixelsPerDegree = GetWithDefault('Enter display scaling (ppd) ', 148);
 else
    expParams.displayPixelsPerDegree = GetWithDefault('Enter display scaling (ppd) ', 71.7);
    expParams.displayPixelsPerDegree = expParams.displayPixelsPerDegree.*2; %have to multiply by 2 because that is what the screen does for some reason. twice the pppd matches the ppd of the projector
@@ -82,11 +78,8 @@ data.StartTime = datestr(clock,'mm_dd_yy_HHMM');
 ScreenID = max(Screen('Screens')); %the largest number will be the screen that the stim is drawn to
   
  %WHICH SCREEN TO DRAW ON
- [win]=Screen('OpenWindow',ScreenID); %window fills screen
- %[win]=Screen('OpenWindow',ScreenID,[],[0 0 1000 1000]); 
- 
-%LOAD GAMMA TABLE FROM CALIBRATION
-Screen('LoadNormalizedGammaTable',win,cal.lookup_table); 
+ %[win]=Screen('OpenWindow',ScreenID); %window fills screen
+ [win]=Screen('OpenWindow',ScreenID,[],[0 0 1000 1000]); 
 
 %WINDOW DIMENTION IN PX 
 [expParams.winXpx, expParams.winYpx]=Screen('WindowSize',ScreenID);
@@ -96,6 +89,22 @@ expParams.WinHeight_dg=expParams.winYpx./expParams.displayPixelsPerDegree;
 
 %PIXELS IN THE CENTER OF THE WINDOW
 [Xwincent, Ywincent] = RectCenter([0 0 expParams.winXpx expParams.winYpx]);
+
+%% Calibration
+%Save the gamatable for the current computer to implement after experiment
+%[gammatable, dacbits, reallutsize] = Screen('ReadNormalizedGammaTable',win);
+
+%LOAD CALIBRATION FILE %different depending on if it is at home version
+if data.HomeVersion == 0
+    load cal_03_05_20; %load the calibration file
+    %LOAD GAMMA TABLE FROM CALIBRATION
+    [oldgammatable] = Screen('LoadNormalizedGammaTable',win,cal.lookup_table); 
+else 
+    load cal_HomeVersion; %load the calibration file
+    [oldgammatable] = Screen('LoadNormalizedGammaTable',win,gammaPowerLaw); 
+end
+
+
 
 
 %% Response Matrix setup
@@ -1606,6 +1615,9 @@ if CondType == 2 && EscapeExp < 1
         ExptLoop = 0;
     end
     
+    %Restore the gamma table for the computer after the experiment is complete
+    Screen('LoadNormalizedGammaTable',win,oldgammatable);
+    
 end %Experiment Loop
 
 sca;
@@ -1654,9 +1666,6 @@ else %if experiment has been ended prematurely
     Circfilename = [CircSavdir CircSave_file];
     save(Circfilename,'LastCircPos_px');
 end
-
-
-
 
 
 
