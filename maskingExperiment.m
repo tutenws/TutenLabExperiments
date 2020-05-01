@@ -101,7 +101,7 @@ if data.HomeVersion == 0
     [oldgammatable] = Screen('LoadNormalizedGammaTable',win,cal.lookup_table); 
 else 
     load cal_HomeVersion; %load the calibration file
-    [oldgammatable] = Screen('LoadNormalizedGammaTable',win,gammaPowerLaw); 
+    [oldgammatable] = Screen('LoadNormalizedGammaTable',win,cal_HomeVersion); 
 end
 
 
@@ -1615,13 +1615,13 @@ if CondType == 2 && EscapeExp < 1
         ExptLoop = 0;
     end
     
-    %Restore the gamma table for the computer after the experiment is complete
-    Screen('LoadNormalizedGammaTable',win,oldgammatable);
-    
 end %Experiment Loop
 
-sca;
+%Restore the gamma table for the computer after the experiment is complete
+Screen('LoadNormalizedGammaTable',win,oldgammatable);
 
+
+sca;
 
 %% Save Data & Calculations
 
