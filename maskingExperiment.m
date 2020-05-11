@@ -78,8 +78,8 @@ data.StartTime = datestr(clock,'mm_dd_yy_HHMM');
 ScreenID = max(Screen('Screens')); %the largest number will be the screen that the stim is drawn to
   
  %WHICH SCREEN TO DRAW ON
- %[win]=Screen('OpenWindow',ScreenID); %window fills screen
- [win]=Screen('OpenWindow',ScreenID,[],[0 0 1000 1000]); 
+ [win]=Screen('OpenWindow',ScreenID); %window fills screen
+ %[win]=Screen('OpenWindow',ScreenID,[],[0 0 1000 1000]); 
 
 %WINDOW DIMENTION IN PX 
 [expParams.winXpx, expParams.winYpx]=Screen('WindowSize',ScreenID);
@@ -379,7 +379,7 @@ testspot = double(Circle(expParams.TestSpotRad_px)).*255; %creates a white test 
 TestSpotTop = round(YCircPos-expParams.TestSpotRad_px); %Y value for top of test spot
 TestSpotLeftEdge = round(XCircPos-expParams.TestSpotRad_px); %x value for left edge of test spot
 %put test spot into testspotLayer
-testspotLayer(TestSpotTop:((TestSpotTop-1)+round(expParams.TestSpotDiam_px)), TestSpotLeftEdge:((TestSpotLeftEdge-1)+round(expParams.TestSpotDiam_px)))=testspot; 
+testspotLayer(TestSpotTop:((TestSpotTop-1)+round(expParams.TestSpotRad_px.*2)), TestSpotLeftEdge:((TestSpotLeftEdge-1)+round(expParams.TestSpotDiam_px)))=testspot; 
 
 
 %CREATE IMAGES
@@ -1640,7 +1640,7 @@ if TrialCounter == expParams.TotalTrials
     save(filename,'data','expParams');
     
     %SAVE CIRCLE POSITION
-    CircSavdir = 'D:\Tuten_Lab\Expt_Masking\Code\TutenLabExperiments\';
+    CircSavdir = pwd;
     CircSave_file = 'LastCircPos_px.mat';
     Circfilename = [CircSavdir CircSave_file];
     save(Circfilename,'LastCircPos_px');
@@ -1661,7 +1661,7 @@ else %if experiment has been ended prematurely
     
     %SAVE CIRCLE POSITION - saved in struct that will be loaded for next
     %experiment run
-    CircSavdir = 'D:\Tuten_Lab\Expt_Masking\Code\TutenLabExperiments\';
+    CircSavdir = pwd;
     CircSave_file = 'LastCircPos_px.mat';
     Circfilename = [CircSavdir CircSave_file];
     save(Circfilename,'LastCircPos_px');

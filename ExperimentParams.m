@@ -25,6 +25,7 @@ expParams.CircDiam_dg=7;
 expParams.CircDiam_px=expParams.displayPixelsPerDegree.*expParams.CircDiam_dg;
 expParams.CircRad_px = round(expParams.CircDiam_px./2);
 %Circle Luminance
+
 expParams.CircLum = [128,128,128];
 st.CircLumVal = expParams.CircLum(1,1); %needed for luminance adjustment of test spot
 %CIRC ADJUSTMENT VARIABLES
