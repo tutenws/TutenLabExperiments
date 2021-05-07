@@ -44,10 +44,10 @@ expParameters.record = 1; % Set to one if you want to record a video for each tr
 %------END HARD-CODED PARAMETER SECTION------------------------------------
 
 % Create QUEST structures, one for each staircase
-for n = 1:expParameters.numStaircases
-    q(n,1) = QuestCreate(expParameters.logMARGuessPixels, expParameters.tGuessSd, ...
-        expParameters.pThreshold, expParameters.beta, expParameters.delta, expParameters.gamma);
-end
+% for n = 1:expParameters.numStaircases
+%     q(n,1) = QuestCreate(expParameters.logMARGuessPixels, expParameters.tGuessSd, ...
+%         expParameters.pThreshold, expParameters.beta, expParameters.delta, expParameters.gamma);
+% end
 
 % Directory where the stimuli will be written and accessed by ICANDI
 % [rootDir, ~, ~] = fileparts(pwd);
@@ -190,9 +190,9 @@ testSequence = [];
 % end
 
 % Shuffle the test sequence
-testSequence(:,end+1) = randn(length(testSequence),1); % Add random vector
-testSequence = sortrows(testSequence, size(testSequence,2)); % Sort by random vector to shuffle
-testSequence(:,end) = []; % Trim last column of sorted random numbers;
+% testSequence(:,end+1) = randn(length(testSequence),1); % Add random vector
+% testSequence = sortrows(testSequence, size(testSequence,2)); % Sort by random vector to shuffle
+% testSequence(:,end) = []; % Trim last column of sorted random numbers;
 
 orientationSequence = 90.*randi([0 3], length(testSequence),1);
 testSequence(:,end+1) = orientationSequence;
