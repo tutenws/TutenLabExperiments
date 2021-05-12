@@ -14,40 +14,48 @@ startup;
 hAomControl = getappdata(0,'hAomControl');
 
 %------HARD-CODED PARAMETER STUFF FOLLOWS----------------------------------
-% Experiment parameters -- BASIC
-expParameters.subjectID = 'Test'; % Videos will save starting with this prefix
-expParameters.aosloPPD = 545; % pixels per degree, adjust as needed
-expParameters.aosloFPS = 30; % UCB frame rate, in Hz
+use_params = input('Do you want to use previous params? y/n:  ','s');
 
-% Experiment parameters -- STIMULUS & VIDEO
-expParameters.testDurationMsec = 750; %Stimulus duration, in msec
-expParameters.testDurationFrames = round(expParameters.aosloFPS*expParameters.testDurationMsec/1000);
-expParameters.stimulusTrackingGain = 1; % Set to "1" for retinal tracking; otherwise set to "0" to deliver "world-fixed" stimuli
-expParameters.gainLockFlag = 1; % Set to "1" to enable "gain lock" mode where stimuli are initially delivered to a tracked location and then stay put in the raster (see below)
-expParameters.videoDurationMsec = 1000; % Video duration, in msec
-expParameters.videoDurationFrames = round(expParameters.aosloFPS*(expParameters.videoDurationMsec/1000)); % Convert to frames
-expParameters.record = 1; % Set to one if you want to record a video for each trial
+if use_params == 'n'
+    % if we do not want to use previous parameters - we can edit them here
+    % Experiment parameters -- BASIC
+    expParameters.subjectID = 'Test'; % Videos will save starting with this prefix
+    expParameters.aosloPPD = 545; % pixels per degree, adjust as needed
+    expParameters.aosloFPS = 30; % UCB frame rate, in Hz
 
-% % Experiment parameters -- STAIRCASE/QUEST
-% expParameters.staircaseType = 'Quest';
-% expParameters.nTrialsPerStaircase = 20; % Number of trials per staircase
-% expParameters.numStaircases = 2; % Interleave staircases? Set to >1
-% expParameters.feedbackFlag = 0; % Set to one if you want to provide feedback to the subject
-% expParameters.MARGuessPixels = 6; % Width in pixels of one bar of the letter E
-% expParameters.logMARGuessPixels = log10(expParameters.MARGuessPixels); % In log units
-% expParameters.tGuessSd = 2; % Width of Bayesian prior, in log units
-% expParameters.pThreshold = .625; % If 4AFC, halfway between 100% and guess rate (25%)
-% expParameters.beta = 3.5; % Slope of psychometric function
-% expParameters.delta = 0.01; % Lapse rate (proportion of suprathreshold trials where subject makes an error)
-% expParameters.gamma = 0.25; % 4 alternative forced-choice = 25 percent guess rate
+    % Experiment parameters -- STIMULUS & VIDEO
+    expParameters.testDurationMsec = 500; % Stimulus duration, in msec
+    expParameters.testDurationFrames = round(expParameters.aosloFPS*expParameters.testDurationMsec/1000);
+    expParameters.stimulusTrackingGain = 1; % Set to "1" for retinal tracking; otherwise set to "0" to deliver "world-fixed" stimuli
+    expParameters.gainLockFlag = 1; % Set to "1" to enable "gain lock" mode where stimuli are initially delivered to a tracked location and then stay put in the raster (see below)
+    expParameters.videoDurationMsec = 1000; % Video duration, in msec
+    expParameters.videoDurationFrames = round(expParameters.aosloFPS*(expParameters.videoDurationMsec/1000)); % Convert to frames
+    expParameters.record = 1; % Set to one if you want to record a video for each trial
+
+    % Experiment parameters -- STAIRCASE/QUEST
+    expParameters.staircaseType = 'Quest';
+    expParameters.nTrialsPerStaircase = 20; % Number of trials per staircase
+    expParameters.numStaircases = 2; % Interleave staircases? Set to >1
+    expParameters.feedbackFlag = 0; % Set to one if you want to provide feedback to the subject
+    expParameters.MARGuessPixels = 6; % Width in pixels of one bar of the letter E
+    expParameters.logMARGuessPixels = log10(expParameters.MARGuessPixels); % In log units
+    expParameters.tGuessSd = 2; % Width of Bayesian prior, in log units
+    expParameters.pThreshold = .625; % If 4AFC, halfway between 100% and guess rate (25%)
+    expParameters.beta = 3.5; % Slope of psychometric function
+    expParameters.delta = 0.01; % Lapse rate (proportion of suprathreshold trials where subject makes an error)
+    expParameters.gamma = 0.25; % 4 alternative forced-choice = 25 percent guess rate
+    save('ExpParams.mat', 'expParameters')
+else
+    expParameters = load('ExpParams.mat'); %call .mat file that has previous settings
+end
 
 %------END HARD-CODED PARAMETER SECTION------------------------------------
 
 % Create QUEST structures, one for each staircase
-% for n = 1:expParameters.numStaircases
-%     q(n,1) = QuestCreate(expParameters.logMARGuessPixels, expParameters.tGuessSd, ...
-%         expParameters.pThreshold, expParameters.beta, expParameters.delta, expParameters.gamma);
-% end
+for n = 1:expParameters.numStaircases
+    q(n,1) = QuestCreate(expParameters.logMARGuessPixels, expParameters.tGuessSd, ...
+        expParameters.pThreshold, expParameters.beta, expParameters.delta, expParameters.gamma);
+end
 
 % Directory where the stimuli will be written and accessed by ICANDI
 % [rootDir, ~, ~] = fileparts(pwd);
@@ -185,21 +193,18 @@ StimParams.fext = 'bmp'; % File extension for stimuli. With the above, ICANDI wi
 
 % Generate the acuity test sequence
 testSequence = [];
-% for staircaseNum = 1:expParameters.numStaircases
-%     testSequence = [testSequence; repmat(staircaseNum, [expParameters.nTrialsPerStaircase 1])]; %#ok<AGROW>
-% end
+for staircaseNum = 1:expParameters.numStaircases
+    testSequence = [testSequence; repmat(staircaseNum, [expParameters.nTrialsPerStaircase 1])]; %#ok<AGROW>
+end
 
 % Shuffle the test sequence
-% testSequence(:,end+1) = randn(length(testSequence),1); % Add random vector
-% testSequence = sortrows(testSequence, size(testSequence,2)); % Sort by random vector to shuffle
-% testSequence(:,end) = []; % Trim last column of sorted random numbers;
+testSequence(:,end+1) = randn(length(testSequence),1); % Add random vector
+testSequence = sortrows(testSequence, size(testSequence,2)); % Sort by random vector to shuffle
+testSequence(:,end) = []; % Trim last column of sorted random numbers;
 
 orientationSequence = 90.*randi([0 3], length(testSequence),1);
 testSequence(:,end+1) = orientationSequence;
 
-% omit staircase, just 
-orientationSequence = 90.*randi([0 3], length(testSequence),1);
-testSequence(:,end+1) = orientationSequence;
 % Save responses and correct/incorrect here (Pre-allocate)
 responseVector = nan(length(testSequence),1);
 correctVector = responseVector;
@@ -208,6 +213,12 @@ correctVector = responseVector;
 basicE = ones(5,5);
 basicE(:,1) = 0;
 basicE(1:2:5,:) = 0;
+
+% Pad the E
+% newRow = zeros(1,size(basicE,2)); % row of 0s
+% basicE = [newRow; basicE; newRow]; % update matrix
+NewCol = zeros(size(basicE,1),1); %columns of 0s
+basicE = [basicE NewCol]; %update matrix
 
 % Initialize the experiment loop
 logResponse = 0;
@@ -219,7 +230,7 @@ WaitSecs(1);
 Speak('Begin experiment.');
 
 while runExperiment == 1
-    
+    redo = 0;
     % Listen to the Game Pad
     [gamePad, ~] = GamePadInput([]); 
     
@@ -227,7 +238,7 @@ while runExperiment == 1
         % Exit the experiment
         Speak('Experiment terminated');
         runExperiment = 0;
-        
+     
     elseif gamePad.buttonLeftUpperTrigger || gamePad.buttonLeftLowerTrigger % Start trial
         logMARSizePixels = QuestQuantile(q(testSequence(trialNum,1)));
         MARsizePixels = round(10.^logMARSizePixels); % Size of each bar in the E, in pixels
@@ -272,6 +283,8 @@ while runExperiment == 1
         orientationResp = 270;
         logResponse = 1;
         Beeper(300, 1, 0.15)
+    elseif gamePad.buttonStart %redo button
+        redo = 1;
     end
     
     if logResponse == 1 && presentStimulus == 0
@@ -301,8 +314,10 @@ while runExperiment == 1
         % Save the experiment data
         save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector');
         
-        % Update the trial counter;
-        trialNum = trialNum + 1;
+        % Update the trial counter if we don't want it to redo;
+        if redo == 0
+            trialNum = trialNum + 1;
+        end
         
         if trialNum > length(testSequence) % Exit loop
             % Terminate experiment
