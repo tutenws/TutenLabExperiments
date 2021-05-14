@@ -19,42 +19,45 @@ use_params = input('Do you want to use previous params? y/n:  ','s');
 if use_params == 'n'
     % if we do not want to use previous parameters - we can edit them here
     % Experiment parameters -- BASIC
-    expParameters.subjectID = 'Test'; % Videos will save starting with this prefix
+    expParameters.subjectID = GetWithDefault('Subject ID','Test'); % Videos will save starting with this prefix
     expParameters.aosloPPD = 545; % pixels per degree, adjust as needed
     expParameters.aosloFPS = 30; % UCB frame rate, in Hz
 
     % Experiment parameters -- STIMULUS & VIDEO
-    expParameters.testDurationMsec = 500; % Stimulus duration, in msec
+    expParameters.testDurationMsec = 750; % Stimulus duration, in msec
     expParameters.testDurationFrames = round(expParameters.aosloFPS*expParameters.testDurationMsec/1000);
-    expParameters.stimulusTrackingGain = 1; % Set to "1" for retinal tracking; otherwise set to "0" to deliver "world-fixed" stimuli
+    expParameters.stimulusTrackingGain = GetWithDefault('Gain: 1 = tracking, 0 = natural',1); % Set to "1" for retinal tracking; otherwise set to "0" to deliver "world-fixed" stimuli
     expParameters.gainLockFlag = 1; % Set to "1" to enable "gain lock" mode where stimuli are initially delivered to a tracked location and then stay put in the raster (see below)
     expParameters.videoDurationMsec = 1000; % Video duration, in msec
     expParameters.videoDurationFrames = round(expParameters.aosloFPS*(expParameters.videoDurationMsec/1000)); % Convert to frames
     expParameters.record = 1; % Set to one if you want to record a video for each trial
+    expParameters.staircase = GetWithDefault('Staircase: 1 = staircase, 0 = fixed trials', 0); % Set to one if you want to use a staircase, 0 for trials
 
     % Experiment parameters -- STAIRCASE/QUEST
     expParameters.staircaseType = 'Quest';
-    expParameters.nTrialsPerStaircase = 20; % Number of trials per staircase
+    expParameters.nTrials =  GetWithDefault('Number of trials', 100); % Number of trials per staircase or exp
     expParameters.numStaircases = 2; % Interleave staircases? Set to >1
     expParameters.feedbackFlag = 0; % Set to one if you want to provide feedback to the subject
-    expParameters.MARGuessPixels = 6; % Width in pixels of one bar of the letter E
-    expParameters.logMARGuessPixels = log10(expParameters.MARGuessPixels); % In log units
+    expParameters.MARPixels =  GetWithDefault('MAR Pixels', 10); % Width in pixels of one bar of the letter E
+    expParameters.logMARPixels = log10(expParameters.MARPixels); % In log units
     expParameters.tGuessSd = 2; % Width of Bayesian prior, in log units
     expParameters.pThreshold = .625; % If 4AFC, halfway between 100% and guess rate (25%)
     expParameters.beta = 3.5; % Slope of psychometric function
     expParameters.delta = 0.01; % Lapse rate (proportion of suprathreshold trials where subject makes an error)
     expParameters.gamma = 0.25; % 4 alternative forced-choice = 25 percent guess rate
     save('ExpParams.mat', 'expParameters')
-else
-    expParameters = load('ExpParams.mat'); %call .mat file that has previous settings
+elseif use_params == 'y'
+    load('ExpParams.mat')
 end
 
 %------END HARD-CODED PARAMETER SECTION------------------------------------
 
 % Create QUEST structures, one for each staircase
-for n = 1:expParameters.numStaircases
-    q(n,1) = QuestCreate(expParameters.logMARGuessPixels, expParameters.tGuessSd, ...
-        expParameters.pThreshold, expParameters.beta, expParameters.delta, expParameters.gamma);
+if expParameters.staircase == 1
+    for n = 1:expParameters.numStaircases
+        q(n,1) = QuestCreate(expParameters.logMARPixels, expParameters.tGuessSd, ...
+            expParameters.pThreshold, expParameters.beta, expParameters.delta, expParameters.gamma);
+    end
 end
 
 % Directory where the stimuli will be written and accessed by ICANDI
@@ -64,6 +67,8 @@ expParameters.stimpath = [rootDir '\tempStimulus\'];
 if ~isdir(expParameters.stimpath)
     mkdir(expParameters.stimpath);
 end
+
+
 
 % Some boilerplate AOMcontrol stuff
 if SYSPARAMS.realsystem == 1
@@ -193,9 +198,14 @@ StimParams.fext = 'bmp'; % File extension for stimuli. With the above, ICANDI wi
 
 % Generate the acuity test sequence
 testSequence = [];
-for staircaseNum = 1:expParameters.numStaircases
-    testSequence = [testSequence; repmat(staircaseNum, [expParameters.nTrialsPerStaircase 1])]; %#ok<AGROW>
+if expParameters.staircase == 0
+   expParameters.numStaircases = 1;
 end
+
+for staircaseNum = 1:expParameters.numStaircases
+testSequence = [testSequence; repmat(staircaseNum, [expParameters.nTrials 1])]; %#ok<AGROW>
+end
+
 
 % Shuffle the test sequence
 testSequence(:,end+1) = randn(length(testSequence),1); % Add random vector
@@ -213,12 +223,6 @@ correctVector = responseVector;
 basicE = ones(5,5);
 basicE(:,1) = 0;
 basicE(1:2:5,:) = 0;
-
-% Pad the E
-% newRow = zeros(1,size(basicE,2)); % row of 0s
-% basicE = [newRow; basicE; newRow]; % update matrix
-NewCol = zeros(size(basicE,1),1); %columns of 0s
-basicE = [basicE NewCol]; %update matrix
 
 % Initialize the experiment loop
 logResponse = 0;
@@ -238,9 +242,20 @@ while runExperiment == 1
         % Exit the experiment
         Speak('Experiment terminated');
         runExperiment = 0;
+        
+    elseif gamePad.buttonStart %redo button
+        Speak('Re do');
+        redo = 1;
+%         presentStimulus = 1;
+%         logResponse = 1;
      
     elseif gamePad.buttonLeftUpperTrigger || gamePad.buttonLeftLowerTrigger % Start trial
-        logMARSizePixels = QuestQuantile(q(testSequence(trialNum,1)));
+        if expParameters.staircase == 1 %only update if it is a quest staircase
+            logMARSizePixels = QuestQuantile(q(testSequence(trialNum,1)));
+        else
+            logMARSizePixels = expParameters.logMARPixels;
+        end
+        
         MARsizePixels = round(10.^logMARSizePixels); % Size of each bar in the E, in pixels
         if MARsizePixels < 1 % Min pixel value
             MARsizePixels = 1;
@@ -249,6 +264,7 @@ while runExperiment == 1
         end
         % Make the E
         testE = imrotate(imresize(basicE, MARsizePixels, 'nearest' ),testSequence(trialNum,2));
+        testE = padarray(testE, [1 1], 1, 'both');
         % Save the E as a .bmp
         imwrite(testE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
         
@@ -283,8 +299,6 @@ while runExperiment == 1
         orientationResp = 270;
         logResponse = 1;
         Beeper(300, 1, 0.15)
-    elseif gamePad.buttonStart %redo button
-        redo = 1;
     end
     
     if logResponse == 1 && presentStimulus == 0
@@ -307,13 +321,18 @@ while runExperiment == 1
         correctVector(trialNum,1) = correct;
         responseVector(trialNum,1) = orientationResp;
         
-        % Update the Quest structure
+        % Update the Quest structure if it is a staircase trial
+        if expParameters.staircase == 1
         q(testSequence(trialNum,1)) = QuestUpdate(q(testSequence(trialNum,1)), ...
             log10(MARsizePixels), correct);
+        end
         
         % Save the experiment data
-        save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector');
-        
+        if expParameters.staircase == 1
+            save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector');
+        else
+            save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector');
+        end
         % Update the trial counter if we don't want it to redo;
         if redo == 0
             trialNum = trialNum + 1;
