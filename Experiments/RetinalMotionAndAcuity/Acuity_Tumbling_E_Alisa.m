@@ -243,7 +243,7 @@ while runExperiment == 1 % Experiment loop
     %compare the last response 
     if gamePad.buttonLeftUpperTrigger || gamePad.buttonLeftLowerTrigger % Start trial
 
-        if ~isempty(lastResponse) %if there is no input, do we need to move the lastResponse to l 244 to reset it each time? or does this only apply the first loop through?
+        if ~isempty(lastResponse) %this only applies the first loop through?
             if ~strcmp(lastResponse, 'redo') && presentStimulus == 1 % if the response is NOT redo then log the most recent button press, then play stimulus sequence
                 % Check if correct
                 if orientationResp == testSequence(trialNum,end)
@@ -285,7 +285,7 @@ while runExperiment == 1 % Experiment loop
                     Beeper(400, 0.5, 0.15); WaitSecs(0.15); Beeper(400, 0.5, 0.15);  WaitSecs(0.15); Beeper(400, 0.5, 0.15);
                     Speak('Experiment complete');
                     TerminateExp;
-                        if trialNum > numTrials
+                        if trialNum > expParameters.nTrials
                             % Exit the experiment
                         end
                 end
@@ -294,7 +294,7 @@ while runExperiment == 1 % Experiment loop
         
         % Show the stimulus
         if presentStimulus == 1
-            MARsizePixels = round(10.^logMARSizePixels); % Size of each bar in the E, in pixels
+            MARsizePixels = round(10.^expParameters.logMARPixels); % Size of each bar in the E, in pixels
         if MARsizePixels < 1 % Min pixel value
             MARsizePixels = 1;
         elseif MARsizePixels > 25 % Max pixel value for MAR; actual E size will be 5x this
@@ -302,7 +302,7 @@ while runExperiment == 1 % Experiment loop
         end
         
         % Make the E
-        testE = imrotate(imresize(basicE, MARsizePixels, 'nearest' ),testSequence(trialNum,2));
+        testE = imrotate(imresize(basicE, MARsizePixels, 'nearest' ),testSequence(trialNum,2)); %Index exceeds matrix dimensions. Error in Acuity_Tumbling_E_Alisa (line 305)
         testE = padarray(testE, [1 1], 1, 'both');
         % Save the E as a .bmp
         imwrite(testE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
@@ -341,9 +341,6 @@ while runExperiment == 1 % Experiment loop
             lastResponse = 'left';
             orientationResp = 0; % Should look to the right if ICANDI is in fundus view
             Beeper(300, 1, 0.15)
-            % Once the subject has pressed something other than the
-            % trigger, set this back to 1 so the next trial can be
-            % initiated
             presentStimulus = 1;
         end
         
@@ -352,21 +349,15 @@ while runExperiment == 1 % Experiment loop
             lastResponse = 'up';
             orientationResp = 90;
             Beeper(300, 1, 0.15)
-            % Once the subject has pressed something other than the
-            % trigger, set this back to 1 so the next trial can be
-            % initiated
             presentStimulus = 1;
         end
         
-    elseif gamePad.DOWNBUTTON
+    elseif gamePad.buttonA
         if getResponse == 1
             lastResponse = 'down';
             gamePad.buttonA % E pointing down
             orientationResp = 270;
             Beeper(300, 1, 0.15)
-            % Once the subject has pressed something other than the
-            % trigger, set this back to 1 so the next trial can be
-            % initiated
             presentStimulus = 1;
         end
         
@@ -375,10 +366,14 @@ while runExperiment == 1 % Experiment loop
         if getResponse == 1
             lastResponse = 'redo';
             Speak('Re do');
-            % Once the subject has pressed something other than the
-            % trigger, set this back to 1 so the next trial can be
-            % initiated
             presentStimulus = 1;
+        end
+        
+    elseif gamePad.buttonBack %redo button
+        if getResponse == 1
+            lastResponse = 'terminate';
+            Speak('experiment terminated');
+            runExperiment = 0; 
         end
     end
 end
