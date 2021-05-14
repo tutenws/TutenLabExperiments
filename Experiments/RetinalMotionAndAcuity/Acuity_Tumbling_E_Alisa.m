@@ -38,8 +38,8 @@ if use_params == 'n'
     expParameters.nTrials =  GetWithDefault('Number of trials', 100); % Number of trials per staircase or exp
     expParameters.numStaircases = 2; % Interleave staircases? Set to >1
     expParameters.feedbackFlag = 0; % Set to one if you want to provide feedback to the subject
-    expParameters.MARPixels =  GetWithDefault('MAR Pixels', 10); % Width in pixels of one bar of the letter E
-    expParameters.logMARPixels = log10(expParameters.MARPixels); % In log units
+    expParameters.MARsizePixels =  GetWithDefault('MAR Pixels', 10); % Width in pixels of one bar of the letter E
+    expParameters.logMARsizePixels = log10(expParameters.MARsizePixels); % In log units
     expParameters.tGuessSd = 2; % Width of Bayesian prior, in log units
     expParameters.pThreshold = .625; % If 4AFC, halfway between 100% and guess rate (25%)
     expParameters.beta = 3.5; % Slope of psychometric function
@@ -55,7 +55,7 @@ end
 % Create QUEST structures, one for each staircase
 if expParameters.staircase == 1
     for n = 1:expParameters.numStaircases
-        q(n,1) = QuestCreate(expParameters.logMARPixels, expParameters.tGuessSd, ...
+        q(n,1) = QuestCreate(expParameters.logMARsizePixels, expParameters.tGuessSd, ...
             expParameters.pThreshold, expParameters.beta, expParameters.delta, expParameters.gamma);
     end
 end
@@ -267,7 +267,7 @@ while runExperiment == 1 % Experiment loop
                 % Update the Quest structure if it is a staircase trial
                 if expParameters.staircase == 1
                 q(testSequence(trialNum,1)) = QuestUpdate(q(testSequence(trialNum,1)), ...
-                    log10(MARsizePixels), correct);
+                    log10(expParameters.MARsizePixels), correct); %added call to expParameters.MARsizePixels
                 end
 
                 % Save the experiment data
@@ -294,7 +294,7 @@ while runExperiment == 1 % Experiment loop
         
         % Show the stimulus
         if presentStimulus == 1
-            MARsizePixels = round(10.^expParameters.logMARPixels); % Size of each bar in the E, in pixels
+            MARsizePixels = round(10.^expParameters.logMARsizePixels); % Size of each bar in the E, in pixels
         if MARsizePixels < 1 % Min pixel value
             MARsizePixels = 1;
         elseif MARsizePixels > 25 % Max pixel value for MAR; actual E size will be 5x this
