@@ -277,7 +277,7 @@ while runExperiment == 1 % Experiment loop
                     save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector');
                 end
 
-                   trialNum = trialNum+1;
+                    trialNum = trialNum+1;
 
                 if trialNum > length(testSequence) % Exit loop
                     % Terminate experiment
@@ -302,11 +302,14 @@ while runExperiment == 1 % Experiment loop
         end
         
         % Make the E
-        testE = imrotate(imresize(basicE, MARsizePixels, 'nearest' ),testSequence(trialNum,2)); %Index exceeds matrix dimensions. Error in Acuity_Tumbling_E_Alisa (line 305)
+        if trialNum > expParameters.nTrials % Edge case: the trial counter is set greater than nTrials 
+            trialNum = expParameters.nTrials;
+        end
+        
+        testE = imrotate(imresize(basicE, MARsizePixels, 'nearest' ),testSequence(trialNum,2)); 
         testE = padarray(testE, [1 1], 1, 'both');
         % Save the E as a .bmp
         imwrite(testE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
-        
         % Call Play Movie
         Parse_Load_Buffers(0);
         Mov.msg = ['Letter size (pixels): ' num2str(MARsizePixels) ...
