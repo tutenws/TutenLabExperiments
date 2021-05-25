@@ -160,7 +160,7 @@ if expParameters.gainLockFlag == 1 && expParameters.stimulusTrackingGain == 1 % 
     gainseq(startFrame+1:end) = 0;
 end
 
-gainseq = abs(gainseq-1);
+% gainseq = abs(gainseq-1); % Will, not sure
 
 angleseq = zeros(size(aom1seq)); % Tracking "angle", typically stays at zero except for in specific experiments
 stimbeep = zeros(size(aom1seq)); % ICANDI will ding on every frame where this is set to "1"
@@ -334,7 +334,7 @@ while runExperiment == 1 % Experiment loop
             % Once the subject has pressed something other than the
             % trigger, set this back to 1 so the next trial can be
             % initiated
-            orientationResp = 180;
+            orientationResp = 0;
             Beeper(300, 1, 0.15)
             presentStimulus = 1;
         end
@@ -342,7 +342,7 @@ while runExperiment == 1 % Experiment loop
     elseif gamePad.buttonX % E pointing left in ICANDI
         if getResponse == 1
             lastResponse = 'left';
-            orientationResp = 0; % Should look to the right if ICANDI is in fundus view
+            orientationResp = 180; % Should look to the right if ICANDI is in fundus view
             Beeper(300, 1, 0.15)
             presentStimulus = 1;
         end
@@ -350,7 +350,7 @@ while runExperiment == 1 % Experiment loop
     elseif gamePad.buttonY % E pointing up
         if getResponse == 1
             lastResponse = 'up';
-            orientationResp = 90;
+            orientationResp = 270;
             Beeper(300, 1, 0.15)
             presentStimulus = 1;
         end
@@ -359,20 +359,20 @@ while runExperiment == 1 % Experiment loop
         if getResponse == 1
             lastResponse = 'down';
             gamePad.buttonA % E pointing down
-            orientationResp = 270;
+            orientationResp = 90;
             Beeper(300, 1, 0.15)
             presentStimulus = 1;
         end
         
         
-    elseif gamePad.buttonStart %redo button
+    elseif gamePad.buttonRightUpperTrigger || gamePad.buttonRightLowerTrigger %gamePad.buttonStart %redo button
         if getResponse == 1
             lastResponse = 'redo';
             Speak('Re do');
             presentStimulus = 1;
         end
         
-    elseif gamePad.buttonBack %redo button
+    elseif gamePad.buttonBack %terminate button
         if getResponse == 1
             lastResponse = 'terminate';
             Speak('experiment terminated');
