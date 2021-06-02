@@ -156,9 +156,10 @@ aom2offy = zeros(size(aom0seq));
 % Other stimulus sequence factors
 gainseq = expParameters.stimulusTrackingGain*ones(size(aom1seq)); % Tracking gain; zero is world-fixed, one is retinally-stabilized
 
-if expParameters.gainLockFlag == 1 && expParameters.stimulusTrackingGain == 1 % Trying to set up some lines to test whether/how "gain lock" works
-    gainseq(startFrame+1:end) = 0;
-end
+% Gain lock bug
+% % if expParameters.gainLockFlag == 1 && expParameters.stimulusTrackingGain == 1 % Trying to set up some lines to test whether/how "gain lock" works
+% %     gainseq(startFrame+1:end) = 0;
+% % end
 
 % gainseq = abs(gainseq-1); % Will, not sure
 
