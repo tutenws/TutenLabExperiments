@@ -32,7 +32,8 @@ if use_params == 'n'
     expParameters.videoDurationFrames = round(expParameters.aosloFPS*(expParameters.videoDurationMsec/1000)); % Convert to frames
     expParameters.record = 1; % Set to one if you want to record a video for each trial
     expParameters.staircase = GetWithDefault('Staircase: 1 = staircase, 0 = fixed trials', 0); % Set to one if you want to use a staircase, 0 for trials
-
+    expParameters.offset = GetWithDefault('Amount of jitter - 0, 12, 25, 50, 100', 0);
+    
     % Experiment parameters -- STAIRCASE/QUEST
     expParameters.staircaseType = 'Quest';
     expParameters.nTrials =  GetWithDefault('Number of trials', 100); % Number of trials per staircase or exp
@@ -41,7 +42,8 @@ if use_params == 'n'
     expParameters.MARsizePixels =  GetWithDefault('MAR Pixels', 10); % Width in pixels of one bar of the letter E
     expParameters.logMARsizePixels = log10(expParameters.MARsizePixels); % In log units
     expParameters.tGuessSd = 2; % Width of Bayesian prior, in log units
-    expParameters.pThreshold = .625; % If 4AFC, halfway between 100% and guess rate (25%)
+    expParameters.pThreshold = .8; % If 4AFC, halfway between 100% and guess rate (25%) = .625
+    % updated to .8 for jitter exp.
     expParameters.beta = 3.5; % Slope of psychometric function
     expParameters.delta = 0.01; % Lapse rate (proportion of suprathreshold trials where subject makes an error)
     expParameters.gamma = 0.25; % 4 alternative forced-choice = 25 percent guess rate
@@ -51,7 +53,9 @@ elseif use_params == 'y'
 end
 
 %------END HARD-CODED PARAMETER SECTION------------------------------------
-
+    %lazy bug fix
+    expParameters.nTrials = expParameters.nTrials+1;
+    
 % Create QUEST structures, one for each staircase
 if expParameters.staircase == 1
     for n = 1:expParameters.numStaircases
@@ -113,6 +117,13 @@ if expParameters.gainLockFlag == 1
     gainLockCommand = sprintf('Gain0Tracking#%d#',expParameters.gainLockFlag);
     netcomm('write',SYSPARAMS.netcommobj, int8(gainLockCommand));
 end
+
+% Set up a vector to draw stimulus offsets from
+offsetVector = zeros(expParameters.nTrials,1);
+offsetVector(1:(round(expParameters.nTrials/4))) = expParameters.offset; % set 1/4 of the trials = to + stimulus jitter
+offsetVector((floor(expParameters.nTrials/4)+1:(floor(expParameters.nTrials/2)))) = -expParameters.offset; % set 1/4 of the trials = to - stimulus jitter
+offsetVector = offsetVector(randperm(length(offsetVector)));
+
 
 %% Main experiment loop
 
@@ -264,7 +275,8 @@ while runExperiment == 1 % Experiment loop
 
                 correctVector(trialNum,1) = correct;
                 responseVector(trialNum,1) = orientationResp;
-
+                offsetVector(trialNum,1) = offset;
+                
                 % Update the Quest structure if it is a staircase trial
                 if expParameters.staircase == 1
                 q(testSequence(trialNum,1)) = QuestUpdate(q(testSequence(trialNum,1)), ...
@@ -273,9 +285,9 @@ while runExperiment == 1 % Experiment loop
 
                 % Save the experiment data
                 if expParameters.staircase == 1
-                    save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector');
+                    save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offset');
                 else
-                    save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector');
+                    save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offset');
                 end
 
                     trialNum = trialNum+1;
@@ -293,7 +305,22 @@ while runExperiment == 1 % Experiment loop
             end
         end
         
+        % Offset the stimulus
+        
+        y_offset = 256 + offsetVector(trialNum);
+        % check for if the Y jitter goes off the screen, if it does
+        % make it a 0 jitter trial
+        if (y_offset - MARsizePixels < 5) | (y_offset + MARsizePixels > 518)
+            y_offset = 256;
+            speak('Stimulus off screen')
+        end
+        
+        %update offset
+        offsetCommand = sprintf('LocUser#%d#%d#', 256, y_offset);
+        netcomm('write',SYSPARAMS.netcommobj,int8(offsetCommand));
+        
         % Show the stimulus
+        
         if presentStimulus == 1
             MARsizePixels = round(10.^expParameters.logMARsizePixels); % Size of each bar in the E, in pixels
         if MARsizePixels < 1 % Min pixel value
@@ -409,3 +436,5 @@ else
     fclose(fid);
 end
 cd ..;
+
+
