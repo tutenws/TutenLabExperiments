@@ -32,12 +32,12 @@ if use_params == 'n'
     expParameters.videoDurationFrames = round(expParameters.aosloFPS*(expParameters.videoDurationMsec/1000)); % Convert to frames
     expParameters.record = 1; % Set to one if you want to record a video for each trial
     expParameters.staircase = GetWithDefault('Staircase: 1 = staircase, 0 = fixed trials', 0); % Set to one if you want to use a staircase, 0 for trials
-    expParameters.offset = GetWithDefault('Amount of jitter - 0, 12, 25, 50, 100', 0);
+    expParameters.offset = GetWithDefault('Amount of jitter: 0, 12, 25, 50, 100', 0);
     
     % Experiment parameters -- STAIRCASE/QUEST
     expParameters.staircaseType = 'Quest';
     expParameters.nTrials =  GetWithDefault('Number of trials', 100); % Number of trials per staircase or exp
-    expParameters.numStaircases = 2; % Interleave staircases? Set to >1
+    expParameters.numStaircases = 1; % Interleave staircases? Set to >1
     expParameters.feedbackFlag = 0; % Set to one if you want to provide feedback to the subject
     expParameters.MARsizePixels =  GetWithDefault('MAR Pixels', 10); % Width in pixels of one bar of the letter E
     expParameters.logMARsizePixels = log10(expParameters.MARsizePixels); % In log units
@@ -52,10 +52,9 @@ elseif use_params == 'y'
     load('ExpParams.mat')
 end
 
+
+
 %------END HARD-CODED PARAMETER SECTION------------------------------------
-    %lazy bug fix
-    expParameters.nTrials = expParameters.nTrials+1;
-    
 % Create QUEST structures, one for each staircase
 if expParameters.staircase == 1
     for n = 1:expParameters.numStaircases
@@ -119,12 +118,15 @@ if expParameters.gainLockFlag == 1
 end
 
 % Set up a vector to draw stimulus offsets from
+
+if expParameters.staircase == 0
 offsetVector = zeros(expParameters.nTrials,1);
 offsetVector(1:(round(expParameters.nTrials/4))) = expParameters.offset; % set 1/4 of the trials = to + stimulus jitter
 offsetVector((floor(expParameters.nTrials/4)+1:(floor(expParameters.nTrials/2)))) = -expParameters.offset; % set 1/4 of the trials = to - stimulus jitter
 offsetVector = offsetVector(randperm(length(offsetVector)));
-
-
+else
+    offsetVector = zeros(expParameters.nTrials*expParameters.numStaircases,1);
+end
 %% Main experiment loop
 
 frameIndex = 2; % The index of the stimulus bitmap
@@ -242,7 +244,6 @@ trialNum = 1;
 runExperiment = 1;
 lastResponse = []; % start with this empty
 getResponse = 0; % set to zero to force the first recognized button press to be the one that triggers the stimulus presentation
-
 WaitSecs(1);
 Speak('Begin experiment.');
 
@@ -275,7 +276,6 @@ while runExperiment == 1 % Experiment loop
 
                 correctVector(trialNum,1) = correct;
                 responseVector(trialNum,1) = orientationResp;
-                offsetVector(trialNum,1) = offset;
                 
                 % Update the Quest structure if it is a staircase trial
                 if expParameters.staircase == 1
@@ -285,24 +285,38 @@ while runExperiment == 1 % Experiment loop
 
                 % Save the experiment data
                 if expParameters.staircase == 1
-                    save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offset');
+                    thresh_size = round(10.^(QuestQuantile(q(testSequence(trialNum,1)))));% Size of each bar in the E, in pixels at threshold
+                    save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector', 'thresh_size');
                 else
-                    save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offset');
+                    save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector');
                 end
 
                     trialNum = trialNum+1;
 
                 if trialNum > length(testSequence) % Exit loop
                     % Terminate experiment
-                    runExperiment = 0;
+                    %trialNum = trialNum+1;
                     Beeper(400, 0.5, 0.15); WaitSecs(0.15); Beeper(400, 0.5, 0.15);  WaitSecs(0.15); Beeper(400, 0.5, 0.15);
                     Speak('Experiment complete');
                     TerminateExp;
-                        if trialNum > expParameters.nTrials
-                            % Exit the experiment
-                        end
+                    %runExperiment = 0;
+                    break
                 end
             end
+        end
+        
+        % Show the stimulus
+        
+        if presentStimulus == 1 && expParameters.staircase == 1
+            expParameters.logMARSizePixels = QuestQuantile(q(testSequence(trialNum,1)));
+            expParameters.MARsizePixels = round(10.^expParameters.logMARsizePixels); % Size of each bar in the E, in pixels
+        end
+%             logMARsizePixels = expParameters.logMARSizePixels
+            MARsizePixels = expParameters.MARsizePixels;
+        if MARsizePixels < 1 % Min pixel value
+            MARsizePixels = 1;
+        elseif MARsizePixels > 25 % Max pixel value for MAR; actual E size will be 5x this
+            MARsizePixels = 25;
         end
         
         % Offset the stimulus
@@ -310,7 +324,7 @@ while runExperiment == 1 % Experiment loop
         y_offset = 256 + offsetVector(trialNum);
         % check for if the Y jitter goes off the screen, if it does
         % make it a 0 jitter trial
-        if (y_offset - MARsizePixels < 5) | (y_offset + MARsizePixels > 518)
+        if (y_offset - MARsizePixels < 5) || (y_offset + MARsizePixels > 518)
             y_offset = 256;
             speak('Stimulus off screen')
         end
@@ -319,15 +333,7 @@ while runExperiment == 1 % Experiment loop
         offsetCommand = sprintf('LocUser#%d#%d#', 256, y_offset);
         netcomm('write',SYSPARAMS.netcommobj,int8(offsetCommand));
         
-        % Show the stimulus
-        
-        if presentStimulus == 1
-            MARsizePixels = round(10.^expParameters.logMARsizePixels); % Size of each bar in the E, in pixels
-        if MARsizePixels < 1 % Min pixel value
-            MARsizePixels = 1;
-        elseif MARsizePixels > 25 % Max pixel value for MAR; actual E size will be 5x this
-            MARsizePixels = 25;
-        end
+
         
         % Make the E
         if trialNum > expParameters.nTrials % Edge case: the trial counter is set greater than nTrials 
@@ -354,8 +360,6 @@ while runExperiment == 1 % Experiment loop
         % triggered before one of the response buttons (see below) is
         % pressed
         presentStimulus = 0;
-        end
-        
     elseif gamePad.buttonB % E pointing right in ICANDI
         if getResponse == 1
             lastResponse = 'right';
@@ -404,7 +408,7 @@ while runExperiment == 1 % Experiment loop
         if getResponse == 1
             lastResponse = 'terminate';
             Speak('experiment terminated');
-            runExperiment = 0; 
+            runExperiment = 0;
         end
     end
 end
@@ -436,5 +440,3 @@ else
     fclose(fid);
 end
 cd ..;
-
-
