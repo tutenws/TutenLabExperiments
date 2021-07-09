@@ -120,10 +120,10 @@ end
 % Set up a vector to draw stimulus offsets from
 
 if expParameters.staircase == 0
-offsetVector = zeros(expParameters.nTrials,1);
-offsetVector(1:(round(expParameters.nTrials/4))) = expParameters.offset; % set 1/4 of the trials = to + stimulus jitter
-offsetVector((floor(expParameters.nTrials/4)+1:(floor(expParameters.nTrials/2)))) = -expParameters.offset; % set 1/4 of the trials = to - stimulus jitter
-offsetVector = offsetVector(randperm(length(offsetVector)));
+    offsetVector = zeros(expParameters.nTrials,1);
+    offsetVector(1:(round(expParameters.nTrials/4))) = expParameters.offset; % set 1/4 of the trials = to + stimulus jitter
+    offsetVector((floor(expParameters.nTrials/4)+1:(floor(expParameters.nTrials/2)))) = -expParameters.offset; % set 1/4 of the trials = to - stimulus jitter
+    offsetVector = offsetVector(randperm(length(offsetVector)));
 else
     offsetVector = zeros(expParameters.nTrials*expParameters.numStaircases,1);
 end
@@ -217,7 +217,7 @@ if expParameters.staircase == 0
 end
 
 for staircaseNum = 1:expParameters.numStaircases
-testSequence = [testSequence; repmat(staircaseNum, [expParameters.nTrials 1])]; %#ok<AGROW>
+    testSequence = [testSequence; repmat(staircaseNum, [expParameters.nTrials 1])]; %#ok<AGROW>
 end
 
 
@@ -279,14 +279,14 @@ while runExperiment == 1 % Experiment loop
                 
                 % Update the Quest structure if it is a staircase trial
                 if expParameters.staircase == 1
-                q(testSequence(trialNum,1)) = QuestUpdate(q(testSequence(trialNum,1)), ...
-                    log10(expParameters.MARsizePixels), correct); %added call to expParameters.MARsizePixels
+                    q(testSequence(trialNum,1)) = QuestUpdate(q(testSequence(trialNum,1)), ...
+                        log10(expParameters.MARsizePixels), correct); %added call to expParameters.MARsizePixels %expParameters.MARsizePixels?
                 end
 
                 % Save the experiment data
                 if expParameters.staircase == 1
-                    thresh_size = round(10.^(QuestQuantile(q(testSequence(trialNum,1)))));% Size of each bar in the E, in pixels at threshold
-                    save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector', 'thresh_size');
+                    expParameters.thresh_size = round(10.^(QuestQuantile(q(testSequence(trialNum,1)))));% Size of each bar in the E, in pixels at threshold
+                    save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector');
                 else
                     save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector');
                 end
@@ -310,13 +310,15 @@ while runExperiment == 1 % Experiment loop
         if presentStimulus == 1 && expParameters.staircase == 1
             expParameters.logMARSizePixels = QuestQuantile(q(testSequence(trialNum,1)));
             expParameters.MARsizePixels = round(10.^expParameters.logMARsizePixels); % Size of each bar in the E, in pixels
+            %MARsizePixels = expParameters.MARsizePixels;
+        else
+            %MARsizePixels = expParameters.MARsizePixels;
         end
-%             logMARsizePixels = expParameters.logMARSizePixels
-            MARsizePixels = expParameters.MARsizePixels;
-        if MARsizePixels < 1 % Min pixel value
-            MARsizePixels = 1;
-        elseif MARsizePixels > 25 % Max pixel value for MAR; actual E size will be 5x this
-            MARsizePixels = 25;
+%             MARsizePixels = expParameters.MARsizePixels;
+        if expParameters.MARsizePixels < 1 % Min pixel value
+            expParameters.MARsizePixels = 1;
+        elseif expParameters.MARsizePixels > 25 % Max pixel value for MAR; actual E size will be 5x this
+            expParameters.MARsizePixels = 25;
         end
         
         % Offset the stimulus
@@ -324,7 +326,7 @@ while runExperiment == 1 % Experiment loop
         y_offset = 256 + offsetVector(trialNum);
         % check for if the Y jitter goes off the screen, if it does
         % make it a 0 jitter trial
-        if (y_offset - MARsizePixels < 5) || (y_offset + MARsizePixels > 518)
+        if (y_offset - expParameters.MARsizePixels < 5) || (y_offset + expParameters.MARsizePixels > 518)
             y_offset = 256;
             speak('Stimulus off screen')
         end
@@ -332,21 +334,21 @@ while runExperiment == 1 % Experiment loop
         %update offset
         offsetCommand = sprintf('LocUser#%d#%d#', 256, y_offset);
         netcomm('write',SYSPARAMS.netcommobj,int8(offsetCommand));
-        
-
+        WaitSecs(1);
         
         % Make the E
         if trialNum > expParameters.nTrials % Edge case: the trial counter is set greater than nTrials 
             trialNum = expParameters.nTrials;
         end
         
-        testE = imrotate(imresize(basicE, MARsizePixels, 'nearest' ),testSequence(trialNum,2)); 
+        testE = imrotate(imresize(basicE, expParameters.MARsizePixels, 'nearest' ),testSequence(trialNum,2)); 
         testE = padarray(testE, [1 1], 1, 'both');
+        
         % Save the E as a .bmp
         imwrite(testE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
         % Call Play Movie
         Parse_Load_Buffers(0);
-        Mov.msg = ['Letter size (pixels): ' num2str(MARsizePixels) ...
+        Mov.msg = ['Letter size (pixels): ' num2str(expParameters.MARsizePixels) ...
             '; Trial ' num2str(trialNum) ' of ' num2str(length(testSequence))]; 
         setappdata(hAomControl, 'Mov',Mov);
         VideoParams.vidname = [expParameters.subjectID '_' sprintf('%03d',trialNum)];
@@ -440,3 +442,4 @@ else
     fclose(fid);
 end
 cd ..;
+
