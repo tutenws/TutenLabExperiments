@@ -66,7 +66,7 @@ end
 % Directory where the stimuli will be written and accessed by ICANDI
 % [rootDir, ~, ~] = fileparts(pwd);
 rootDir = pwd;
-expParameters.stimpath = [rootDir '\tempStimulus\'];
+expParameters.stimpath = [rootDir filesep 'tempStimulus' filesep];
 if ~isdir(expParameters.stimpath)
     mkdir(expParameters.stimpath);
 end
@@ -82,6 +82,7 @@ if SYSPARAMS.realsystem == 1
     if expParameters.record == 1 % Recording videos for each trial; set to zero if you don't want to record trial videos
         VideoParams.videodur = expParameters.videoDurationMsec./1000; % Convert to seconds; ICANDI will record a video for each trial of this duration
     end
+    
     psyfname = set_VideoParams_PsyfileName(); % Create a file name to which to save data 
     Parse_Load_Buffers(1); % Not sure about what this does when called in this way
     set(handles.image_radio1, 'Enable', 'off');
@@ -95,7 +96,7 @@ end
 % Establish file name, perhaps from psyfname, so that videos and
 % experiment data file are saved together in the same folder
 [rootFolder, fileName, ~] = fileparts(psyfname);
-dataFile = [rootFolder '\' fileName '_acuityData.mat'];
+dataFile = [rootFolder filesep fileName '_acuityData.mat'];
 
 % Stimulus location is selected by user click in ICANDI, but if you are
 % doing an "untracked" (i.e. gain = 0) experiment, this is a way to ensure
@@ -294,39 +295,54 @@ while runExperiment == 1 % Experiment loop
                     trialNum = trialNum+1;
 
                 if trialNum > length(testSequence) % Exit loop
+%                     % Terminate experiment
+%                     %trialNum = trialNum+1;
+%                     Beeper(400, 0.5, 0.15); WaitSecs(0.15); Beeper(400, 0.5, 0.15);  WaitSecs(0.15); Beeper(400, 0.5, 0.15);
+%                     Speak('Experiment complete');
+%                     TerminateExp;
+%                     %runExperiment = 0;
+%                     break
                     % Terminate experiment
-                    %trialNum = trialNum+1;
+                    runExperiment = 0;
                     Beeper(400, 0.5, 0.15); WaitSecs(0.15); Beeper(400, 0.5, 0.15);  WaitSecs(0.15); Beeper(400, 0.5, 0.15);
                     Speak('Experiment complete');
                     TerminateExp;
-                    %runExperiment = 0;
-                    break
+                        if trialNum > expParameters.nTrials
+                            % Exit the experiment
+                        end
                 end
+%                 end
             end
         end
         
         % Show the stimulus
-        
-        if presentStimulus == 1 && expParameters.staircase == 1
-            expParameters.logMARSizePixels = QuestQuantile(q(testSequence(trialNum,1)));
-            expParameters.MARsizePixels = round(10.^expParameters.logMARsizePixels); % Size of each bar in the E, in pixels
-            %MARsizePixels = expParameters.MARsizePixels;
-        else
-            %MARsizePixels = expParameters.MARsizePixels;
+        if presentStimulus == 1
+            MARsizePixels = round(10.^expParameters.logMARsizePixels); % Size of each bar in the E, in pixels
+        if MARsizePixels < 1 % Min pixel value
+            MARsizePixels = 1;
+        elseif MARsizePixels > 25 % Max pixel value for MAR; actual E size will be 5x this
+            MARsizePixels = 25;
         end
-%             MARsizePixels = expParameters.MARsizePixels;
-        if expParameters.MARsizePixels < 1 % Min pixel value
-            expParameters.MARsizePixels = 1;
-        elseif expParameters.MARsizePixels > 25 % Max pixel value for MAR; actual E size will be 5x this
-            expParameters.MARsizePixels = 25;
-        end
-        
+%         if presentStimulus == 1 && expParameters.staircase == 1
+%             expParameters.logMARSizePixels = QuestQuantile(q(testSequence(trialNum,1)));
+%             expParameters.MARsizePixels = round(10.^expParameters.logMARsizePixels); % Size of each bar in the E, in pixels
+%             %MARsizePixels = expParameters.MARsizePixels;
+%         else
+%             %MARsizePixels = expParameters.MARsizePixels;
+%         end
+% %             MARsizePixels = expParameters.MARsizePixels;
+%         if expParameters.MARsizePixels < 1 % Min pixel value
+%             expParameters.MARsizePixels = 1;
+%         elseif expParameters.MARsizePixels > 25 % Max pixel value for MAR; actual E size will be 5x this
+%             expParameters.MARsizePixels = 25;
+%         end
+%         
         % Offset the stimulus
         
         y_offset = 256 + offsetVector(trialNum);
         % check for if the Y jitter goes off the screen, if it does
         % make it a 0 jitter trial
-        if (y_offset - expParameters.MARsizePixels < 5) || (y_offset + expParameters.MARsizePixels > 518)
+        if (y_offset - MARsizePixels < 5) || (y_offset + MARsizePixels > 518)
             y_offset = 256;
             speak('Stimulus off screen')
         end
@@ -341,7 +357,7 @@ while runExperiment == 1 % Experiment loop
             trialNum = expParameters.nTrials;
         end
         
-        testE = imrotate(imresize(basicE, expParameters.MARsizePixels, 'nearest' ),testSequence(trialNum,2)); 
+        testE = imrotate(imresize(basicE, MARsizePixels, 'nearest' ),testSequence(trialNum,2)); 
         testE = padarray(testE, [1 1], 1, 'both');
         
         % Save the E as a .bmp
@@ -362,6 +378,8 @@ while runExperiment == 1 % Experiment loop
         % triggered before one of the response buttons (see below) is
         % pressed
         presentStimulus = 0;
+        end
+        
     elseif gamePad.buttonB % E pointing right in ICANDI
         if getResponse == 1
             lastResponse = 'right';
@@ -421,9 +439,9 @@ sca;
 function startup
 
 dummy=ones(10,10);
-if isdir([pwd,'\tempStimulus']) == 0
+if isdir([pwd, filesep 'tempStimulus']) == 0
     mkdir(pwd,'tempStimulus');
-    cd([pwd,'\tempStimulus']);
+    cd([pwd, filesep 'tempStimulus']);
     
     imwrite(dummy,'frame2.bmp');
     fid = fopen('frame2.buf','w');
@@ -432,7 +450,7 @@ if isdir([pwd,'\tempStimulus']) == 0
     fwrite(fid, dummy, 'double');
     fclose(fid);
 else
-    cd([pwd,'\tempStimulus']);
+    cd([pwd, filesep 'tempStimulus']);
     delete ('*.*');
     imwrite(dummy,'frame2.bmp');
     fid = fopen('frame2.buf','w');
@@ -442,4 +460,3 @@ else
     fclose(fid);
 end
 cd ..;
-
