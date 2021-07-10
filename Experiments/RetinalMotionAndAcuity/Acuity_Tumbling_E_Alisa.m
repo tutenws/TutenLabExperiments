@@ -41,6 +41,8 @@ if use_params == 'n'
     expParameters.feedbackFlag = 0; % Set to one if you want to provide feedback to the subject
     expParameters.MARsizePixels =  GetWithDefault('MAR Pixels', 10); % Width in pixels of one bar of the letter E
     expParameters.logMARsizePixels = log10(expParameters.MARsizePixels); % In log units
+    expParameters.MARguesssizePixels =  15; % Width in pixels of one bar of the letter E
+    expParameters.logMARguessPixels = log10(expParameters.MARguesssizePixels); % In log units
     expParameters.tGuessSd = 2; % Width of Bayesian prior, in log units
     expParameters.pThreshold = .8; % If 4AFC, halfway between 100% and guess rate (25%) = .625
     % updated to .8 for jitter exp.
@@ -58,7 +60,7 @@ end
 % Create QUEST structures, one for each staircase
 if expParameters.staircase == 1
     for n = 1:expParameters.numStaircases
-        q(n,1) = QuestCreate(expParameters.logMARsizePixels, expParameters.tGuessSd, ...
+        q(n,1) = QuestCreate(expParameters.logMARguessPixels, expParameters.tGuessSd, ...
             expParameters.pThreshold, expParameters.beta, expParameters.delta, expParameters.gamma);
     end
 end
@@ -281,67 +283,52 @@ while runExperiment == 1 % Experiment loop
                 % Update the Quest structure if it is a staircase trial
                 if expParameters.staircase == 1
                     q(testSequence(trialNum,1)) = QuestUpdate(q(testSequence(trialNum,1)), ...
-                        log10(expParameters.MARsizePixels), correct); %added call to expParameters.MARsizePixels %expParameters.MARsizePixels?
+                        log10(expParameters.MARsizePixels), correct); %added call to expParameters.MARsizePixels
                 end
 
                 % Save the experiment data
                 if expParameters.staircase == 1
-                    expParameters.thresh_size = round(10.^(QuestQuantile(q(testSequence(trialNum,1)))));% Size of each bar in the E, in pixels at threshold
+                    expParameters.thresh_size = MARsizePixels;% Size of each bar in the E, in pixels at threshold
                     save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector');
                 else
                     save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector');
                 end
 
-                    trialNum = trialNum+1;
+                     trialNum = trialNum+1;
 
                 if trialNum > length(testSequence) % Exit loop
 %                     % Terminate experiment
-%                     %trialNum = trialNum+1;
-%                     Beeper(400, 0.5, 0.15); WaitSecs(0.15); Beeper(400, 0.5, 0.15);  WaitSecs(0.15); Beeper(400, 0.5, 0.15);
-%                     Speak('Experiment complete');
-%                     TerminateExp;
-%                     %runExperiment = 0;
-%                     break
-                    % Terminate experiment
-                    runExperiment = 0;
+                    %runExperiment = 0;
                     Beeper(400, 0.5, 0.15); WaitSecs(0.15); Beeper(400, 0.5, 0.15);  WaitSecs(0.15); Beeper(400, 0.5, 0.15);
                     Speak('Experiment complete');
                     TerminateExp;
-                        if trialNum > expParameters.nTrials
-                            % Exit the experiment
-                        end
+                    break
+%                         if trialNum > expParameters.nTrials
+%                             % Exit the experiment
+%                         end
                 end
-%                 end
+
             end
         end
-        
-        % Show the stimulus
+
+            % Show the stimulus
+            
         if presentStimulus == 1
+            if expParameters.staircase == 1
+                expParameters.logMARsizePixels = round(QuestQuantile(q(testSequence(trialNum,1)))); %trying to get staircase to work
+            end
             MARsizePixels = round(10.^expParameters.logMARsizePixels); % Size of each bar in the E, in pixels
         if MARsizePixels < 1 % Min pixel value
             MARsizePixels = 1;
         elseif MARsizePixels > 25 % Max pixel value for MAR; actual E size will be 5x this
             MARsizePixels = 25;
         end
-%         if presentStimulus == 1 && expParameters.staircase == 1
-%             expParameters.logMARSizePixels = QuestQuantile(q(testSequence(trialNum,1)));
-%             expParameters.MARsizePixels = round(10.^expParameters.logMARsizePixels); % Size of each bar in the E, in pixels
-%             %MARsizePixels = expParameters.MARsizePixels;
-%         else
-%             %MARsizePixels = expParameters.MARsizePixels;
-%         end
-% %             MARsizePixels = expParameters.MARsizePixels;
-%         if expParameters.MARsizePixels < 1 % Min pixel value
-%             expParameters.MARsizePixels = 1;
-%         elseif expParameters.MARsizePixels > 25 % Max pixel value for MAR; actual E size will be 5x this
-%             expParameters.MARsizePixels = 25;
-%         end
-%         
+        
         % Offset the stimulus
         
         y_offset = 256 + offsetVector(trialNum);
-        % check for if the Y jitter goes off the screen, if it does
-        % make it a 0 jitter trial
+        check for if the Y jitter goes off the screen, if it does
+        make it a 0 jitter trial
         if (y_offset - MARsizePixels < 5) || (y_offset + MARsizePixels > 518)
             y_offset = 256;
             speak('Stimulus off screen')
