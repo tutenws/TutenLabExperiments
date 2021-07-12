@@ -43,7 +43,7 @@ if use_params == 'n'
     expParameters.logMARsizePixels = log10(expParameters.MARsizePixels); % In log units
     expParameters.MARguesssizePixels =  15; % Width in pixels of one bar of the letter E
     expParameters.logMARguessPixels = log10(expParameters.MARguesssizePixels); % In log units
-    expParameters.tGuessSd = 2; % Width of Bayesian prior, in log units
+    expParameters.tGuessSd = 3; % Width of Bayesian prior, in log units
     expParameters.pThreshold = .8; % If 4AFC, halfway between 100% and guess rate (25%) = .625
     % updated to .8 for jitter exp.
     expParameters.beta = 3.5; % Slope of psychometric function
@@ -283,12 +283,11 @@ while runExperiment == 1 % Experiment loop
                 % Update the Quest structure if it is a staircase trial
                 if expParameters.staircase == 1
                     q(testSequence(trialNum,1)) = QuestUpdate(q(testSequence(trialNum,1)), ...
-                        log10(expParameters.MARsizePixels), correct); %added call to expParameters.MARsizePixels
+                        log10(MARsizePixels), correct); %added call to expParameters.MARsizePixels
                 end
 
                 % Save the experiment data
                 if expParameters.staircase == 1
-                    expParameters.thresh_size = MARsizePixels;% Size of each bar in the E, in pixels at threshold
                     save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector');
                 else
                     save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector');
@@ -315,7 +314,7 @@ while runExperiment == 1 % Experiment loop
             
         if presentStimulus == 1
             if expParameters.staircase == 1
-                expParameters.logMARsizePixels = round(QuestQuantile(q(testSequence(trialNum,1)))); %trying to get staircase to work
+                expParameters.logMARsizePixels = (QuestQuantile(q(testSequence(trialNum,1)))); %trying to get staircase to work
             end
             MARsizePixels = round(10.^expParameters.logMARsizePixels); % Size of each bar in the E, in pixels
         if MARsizePixels < 1 % Min pixel value
@@ -327,8 +326,8 @@ while runExperiment == 1 % Experiment loop
         % Offset the stimulus
         
         y_offset = 256 + offsetVector(trialNum);
-        check for if the Y jitter goes off the screen, if it does
-        make it a 0 jitter trial
+%        check for if the Y jitter goes off the screen, if it does
+%        make it a 0 jitter trial
         if (y_offset - MARsizePixels < 5) || (y_offset + MARsizePixels > 518)
             y_offset = 256;
             speak('Stimulus off screen')
@@ -351,7 +350,7 @@ while runExperiment == 1 % Experiment loop
         imwrite(testE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
         % Call Play Movie
         Parse_Load_Buffers(0);
-        Mov.msg = ['Letter size (pixels): ' num2str(expParameters.MARsizePixels) ...
+        Mov.msg = ['Letter size (pixels): ' num2str(MARsizePixels) ...
             '; Trial ' num2str(trialNum) ' of ' num2str(length(testSequence))]; 
         setappdata(hAomControl, 'Mov',Mov);
         VideoParams.vidname = [expParameters.subjectID '_' sprintf('%03d',trialNum)];
@@ -420,8 +419,6 @@ while runExperiment == 1 % Experiment loop
     end
 end
 
-
-sca;
 
 function startup
 
