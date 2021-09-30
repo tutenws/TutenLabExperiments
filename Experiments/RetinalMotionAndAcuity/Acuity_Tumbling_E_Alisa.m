@@ -24,7 +24,7 @@ if use_params == 'n'
     expParameters.aosloFPS = 30; % UCB frame rate, in Hz
 
     % Experiment parameters -- STIMULUS & VIDEO
-    expParameters.testDurationMsec = 750; % Stimulus duration, in msec
+    expParameters.testDurationMsec = GetWithDefault('Timing: enter duration in msc', 750); % Stimulus duration, in msec
     expParameters.testDurationFrames = round(expParameters.aosloFPS*expParameters.testDurationMsec/1000);
     expParameters.stimulusTrackingGain = GetWithDefault('Gain: 1 = tracking, 0 = natural',1); % Set to "1" for retinal tracking; otherwise set to "0" to deliver "world-fixed" stimuli
     expParameters.gainLockFlag = 1; % Set to "1" to enable "gain lock" mode where stimuli are initially delivered to a tracked location and then stay put in the raster (see below)
@@ -32,7 +32,7 @@ if use_params == 'n'
     expParameters.videoDurationFrames = round(expParameters.aosloFPS*(expParameters.videoDurationMsec/1000)); % Convert to frames
     expParameters.record = 1; % Set to one if you want to record a video for each trial
     expParameters.staircase = GetWithDefault('Staircase: 1 = staircase, 0 = fixed trials', 0); % Set to one if you want to use a staircase, 0 for trials
-    expParameters.offset = GetWithDefault('Amount of jitter: 0, 12, 25, 50, 100', 0);
+    expParameters.offset = 0;
     
     % Experiment parameters -- STAIRCASE/QUEST
     expParameters.staircaseType = 'Quest';
