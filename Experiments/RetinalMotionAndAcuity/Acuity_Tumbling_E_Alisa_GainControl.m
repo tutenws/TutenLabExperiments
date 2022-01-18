@@ -26,7 +26,7 @@ if use_params == 'n'
     % Experiment parameters -- STIMULUS & VIDEO
     expParameters.testDurationMsec = GetWithDefault('Timing: enter duration in msc', 750); % Stimulus duration, in msec
     expParameters.testDurationFrames = round(expParameters.aosloFPS*expParameters.testDurationMsec/1000);
-    expParameters.stimulusTrackingGain = GetWithDefault('Gain: 1 = tracking, 0 = natural',1); % Set to "1" for retinal tracking; otherwise set to "0" to deliver "world-fixed" stimuli
+    expParameters.stimulusTrackingGain = GetWithDefault('Gain: 1 = tracking, 0 = natural, 2 = interleaved',1); % Set to "1" for retinal tracking; otherwise set to "0" to deliver "world-fixed" stimuli
     expParameters.gainLockFlag = 1; % Set to "1" to enable "gain lock" mode where stimuli are initially delivered to a tracked location and then stay put in the raster (see below)
     expParameters.videoDurationMsec = 1000; % Video duration, in msec
     expParameters.videoDurationFrames = round(expParameters.aosloFPS*(expParameters.videoDurationMsec/1000)); % Convert to frames
@@ -231,13 +231,28 @@ testSequence(:,end) = []; % Trim last column of sorted random numbers;
 
 orientationSequence = 90.*randi([0 3], length(testSequence),1);
 testSequence(:,end+1) = orientationSequence;
-% 
-% % Update the 50 to trials per condition
-% if doInterleave == 1
-% gainSequence = Shuffle([zeros(50,1); ones(50,1)]);
-% else
-%     gainSequence = expParam.... % Just one number in the vector
-% end
+
+% Turn on doInterleave
+if expParameters.stimulusTrackingGain == 2
+    doInterleave = 1;
+end
+
+% Update the trials for each gain condition randomly
+gainSequence = [];
+
+if doInterleave == 1
+    gainSequence = Shuffle([zeros(floor(expParameters.nTrials/2),1); ones(floor(expParameters.nTrials/2),1)]);
+    if length(gainSequence) ~= length(testSequence)
+        lengthFix = length(gainSequence) - length(testSequence);
+            if lengthFix < 0 % if gainSeq is longer than testSeq
+                gainSequence(end+lengthFix) = 1; % add a gain 1 trial
+            else
+                gainSequence = gainSequence(1:length(testSequence));
+            end
+    end
+else
+    gainSequence = (testSequence(:,expParameters.stimulusTrackingGain));  % Just one number in the vector
+end
 
 
 % Save responses and correct/incorrect here (Pre-allocate)
@@ -293,12 +308,18 @@ while runExperiment == 1 % Experiment loop
                     q(testSequence(trialNum,1)) = QuestUpdate(q(testSequence(trialNum,1)), ...
                         log10(MARsizePixels), correct); %added call to expParameters.MARsizePixels
                 end
-
+                % print if it was correct
+                fprintf('Correct = %f\n', correct)
                 % Save the experiment data
                 if expParameters.staircase == 1
                     save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector');
+                    %show a graph of the staircase
+                    figure, plot(((1:expParameters.nTrials) q.intensity(1:expParameters.nTrials)))
+                    %print the size of the # of pixels the bar should be
+                    %for the threshold size
+                    fprintf('MAR = %f\n', 10^q.intensity(expParameters.nTrials))
                 else
-                    save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector');
+                    save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector', 'gainSequence');
                 end
 
                      trialNum = trialNum+1;
@@ -357,14 +378,14 @@ while runExperiment == 1 % Experiment loop
         % Save the E as a .bmp
         imwrite(testE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
         
-        % Check whether trial number is even or odd
-        if mod(trialNum,2) == 0
-            trialGain = 0;            
-        else
-            trialGain = 1;
-        end
+%         % Check whether trial number is even or odd
+%         if mod(trialNum,2) == 0
+%             trialGain = 0;            
+%         else
+%             trialGain = 1;
+%         end
         % Update the gain;
-        Mov.gainseq(:) = trialGain;
+        Mov.gainseq(:) = gainSequence(trialNum);
         
         % Call Play Movie
         Parse_Load_Buffers(0);
@@ -426,6 +447,10 @@ while runExperiment == 1 % Experiment loop
             lastResponse = 'redo';
             Speak('Re do');
             presentStimulus = 1;
+            % select a new orientation if we redo a trial
+            randomOrientation = (0:90:270);
+            rand = randi(length(randomOrientation));
+            testSequence(trialNum,end) = randomOrientation(rand);
         end
         
     elseif gamePad.buttonBack %terminate button
