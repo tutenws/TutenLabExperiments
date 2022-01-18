@@ -233,6 +233,7 @@ orientationSequence = 90.*randi([0 3], length(testSequence),1);
 testSequence(:,end+1) = orientationSequence;
 
 % Turn on doInterleave
+doInterleave = 0;
 if expParameters.stimulusTrackingGain == 2
     doInterleave = 1;
 end
@@ -251,7 +252,7 @@ if doInterleave == 1
             end
     end
 else
-    gainSequence = (testSequence(:,expParameters.stimulusTrackingGain));  % Just one number in the vector
+    gainSequence = expParameters.stimulusTrackingGain*ones(length(testSequence),1);  % Just one number in the vector
 end
 
 
@@ -313,9 +314,6 @@ while runExperiment == 1 % Experiment loop
                 % Save the experiment data
                 if expParameters.staircase == 1
                     save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector');
-                    %show a graph of the staircase
-                    figure, plot(((1:expParameters.nTrials) q.intensity(1:expParameters.nTrials)))
-                    %print the size of the # of pixels the bar should be
                     %for the threshold size
                     fprintf('MAR = %f\n', 10^q.intensity(expParameters.nTrials))
                 else
@@ -330,6 +328,9 @@ while runExperiment == 1 % Experiment loop
                     Beeper(400, 0.5, 0.15); WaitSecs(0.15); Beeper(400, 0.5, 0.15);  WaitSecs(0.15); Beeper(400, 0.5, 0.15);
                     Speak('Experiment complete');
                     TerminateExp;
+                    %show a graph of the staircase
+                    figure, plot(1:expParameters.nTrials, q.intensity(1:expParameters.nTrials))%print the size of the # of pixels the bar should be
+                    
                     break
 %                         if trialNum > expParameters.nTrials
 %                             % Exit the experiment
