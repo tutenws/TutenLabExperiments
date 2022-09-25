@@ -1,9 +1,10 @@
-%% AMB & JOM Analysis 11/22
-% can be used to compare FEM traces from ICANDI & RSLAM
-% 
+%% AMB, JOM & WT 11/22
+% Compares FEM traces from ICANDI & RSLAM
+% Still needs to be edited for time and offset between ICANDI&RSLAM
+avg_PPD = 554.3; % change this based on the AOSLO's avg X&Y pixels per degree
 ICandyvideoNumber = 2;
 Rslam_VideoNumber = ICandyvideoNumber;
-folder = '/Users/alisabraun/Desktop/FEM Trace Verification/Unstab';
+folder = '/Users/alisabraun/Documents/GitHub/TutenLabExperiments/Experiments/RetinalMotionAndAcuity/RSLAM_CSV/Stab';
 ICandy_CSV_file = sprintf('10001R_00%d.csv', ICandyvideoNumber);
 rslam_output_file = 'rslamv2_outputs.mat';
 csvDataRaw = readtable(fullfile(folder, ICandy_CSV_file));
@@ -14,6 +15,7 @@ csvxdata = csvxdata(:);
 csvydata = csvDataRaw{:,5:2:69}';
 csvydata = csvydata(:);
 csvdata = array2table([csvxdata csvydata], 'VariableNames',{'Xpos','Ypos'});
+% center and transpose data to match
 csvdata.XposZero = csvdata.Xpos - csvdata.Xpos(1);
 csvdata.XposZero = csvdata.XposZero.*-1;
 csvdata.YposZero = csvdata.Ypos - csvdata.Ypos(1);
@@ -21,6 +23,12 @@ csvdata.YposZero = csvdata.YposZero.*-1;
 rslamdata = array2table(squeeze(rslam_dataAll.eye_motions(Rslam_VideoNumber,:,:)),'VariableNames',{'Timestamp', 'Xpos','Ypos'});
 rslamdata.XposZero = rslamdata.Xpos-rslamdata.Xpos(1);
 rslamdata.YposZero = rslamdata.Ypos-rslamdata.Ypos(1);
+%convert to arcmin
+csvdata.XposZeroArc = (csvdata.XposZero ./ avg_PPD) * 60;%% START HERE, look up PPD avg for all sessions
+csvdata.YposZeroArc = (csvdata.YposZero ./ avg_PPD) * 60;
+rslamdata.XposZeroArc = (rslamdata.XposZero ./ avg_PPD) * 60;
+rslamdata.YposZeroArc = (rslamdata.YposZero ./ avg_PPD) * 60;
+% plot
 figure
 subplot(2,1,1)
 plot(csvdata.XposZero, 'g')
