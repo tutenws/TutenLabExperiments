@@ -36,6 +36,8 @@ hold
 plot(csvdata.YposZero);
 legend('X pos','Y pos')
 title(['Icandy ' strrep(ICandy_CSV_file,'_','\_')]);
+xlabel('Timestamp (total 1 second)')
+ylabel('Arcmin')
 subplot(2,1,2)
 plot(rslamdata.Timestamp, rslamdata.XposZero, '.-g');
 hold
