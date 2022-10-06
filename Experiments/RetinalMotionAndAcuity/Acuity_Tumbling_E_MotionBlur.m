@@ -229,8 +229,32 @@ testSequence(:,end+1) = randn(length(testSequence),1); % Add random vector
 testSequence = sortrows(testSequence, size(testSequence,2)); % Sort by random vector to shuffle
 testSequence(:,end) = []; % Trim last column of sorted random numbers;
 
-orientationSequence = 90.*randi([0 3], length(testSequence),1);
-testSequence(:,end
+% Orientation Sequence
+A=0*ones(1,20);
+B=1*ones(1,20);
+C=2*ones(1,20);
+D=3*ones(1,20);
+orientationSequence = horzcat(A,B,C,D);
+orientationSequence = orientationSequence(randperm(length(orientationSequence)));
+
+% Motion Direction Sequence
+E=4*ones(1,20)
+stimMotionDirection = horzcat(B,C,D,E)
+stimMotionDirection = stimMotionDirection(randperm(length(stimMotionDirection)))
+
+% Gain Sequence
+gain1=1*ones(1,70)
+gain0=0*ones(1,10)
+gain_condition = horzcat(gain1,gain0)
+gain_condition = gain_condition(randperm(length(gain_condition))); 
+
+% Slip Sequence
+slip0=0*ones(1,10)
+sliphalf=0.5*ones(1,20)
+slip1=1*ones(1,20)
+slip2=2*ones(1,20)
+slip_condition = horzcat(slip0,sliphalf,slip1,slip2)
+slip_condition = slip_condition(randperm(length(slip_condition)))
 
 % Save responses and correct/incorrect here (Pre-allocate)
 responseVector = nan(length(testSequence),1);
@@ -350,30 +374,32 @@ while runExperiment == 1 % Experiment loop
         % Save the E as a .bmp
         imwrite(testE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
         
+        % Determine gain seq
+
         % Determine how the E will move
-        stimMotionDirection = randi([0 4]);
-        slip_values = [0,0.5,1,2];
-        slip_condition = randi(slip_values);
-        MAR_slip = slipcondition*expParameters.MARsizePixels % multiply slip value by MAR size
-        shiftVector = 0:MAR_slip:MAR_slip*(expParameters.testDurationFrames-1);
-        % First, make sure location vectors are set to zero in the Mov structure
-        Mov.aom0locx(:) = 0;
-        Mov.aom0locy(:) = 0;
-        % Now update according to stimMotionDirection
-        if stimMotionDirection == 1 % Rightward motion
-            Mov.aom0locx(startFrame:endFrame) = shiftVector;
-        elseif stimMotionDirection == 2 % Upward motion
-            Mov.aom0locy(startFrame:endFrame) = shiftVector;
-        elseif stimMotionDirection == 3 % Leftward motion
-            Mov.aom0locx(startFrame:endFrame) = -shiftVector;
-        elseif stimMotionDirection == 4 % Downward motion
-            Mov.aom0locy(startFrame:endFrame) = -shiftVector;
-        else
-            % Do nothing
-        end
-        % update stim motion vector
-        stimMotionVector(trialNum, 1) = stimMotionDirection;
-        
+        if gain_condition[trialNum] == 1:
+            MAR_slip = slip_condition*expParameters.MARsizePixels % multiply slip value by MAR size
+            shiftVector = 0:MAR_slip:MAR_slip*(expParameters.testDurationFrames-1);
+            % First, make sure location vectors are set to zero in the Mov structure
+            Mov.aom0locx(:) = 0;
+            Mov.aom0locy(:) = 0;
+            % Now update according to stimMotionDirection
+            if stimMotionDirection == 1 % Rightward motion
+                Mov.aom0locx(startFrame:endFrame) = shiftVector;
+            elseif stimMotionDirection == 2 % Upward motion
+                Mov.aom0locy(startFrame:endFrame) = shiftVector;
+            elseif stimMotionDirection == 3 % Leftward motion
+                Mov.aom0locx(startFrame:endFrame) = -shiftVector;
+            elseif stimMotionDirection == 4 % Downward motion
+                Mov.aom0locy(startFrame:endFrame) = -shiftVector;
+            else
+                % Do nothing
+            end
+            % update stim motion vector
+            stimMotionVector(trialNum, 1) = stimMotionDirection;
+        else 
+            %change gain value to 0
+            
         % Call Play Movie
         Parse_Load_Buffers(0);
         Mov.msg = ['Letter size (pixels): ' num2str(MARsizePixels) ...
