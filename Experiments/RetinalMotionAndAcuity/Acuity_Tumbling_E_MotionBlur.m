@@ -230,7 +230,7 @@ testSequence = sortrows(testSequence, size(testSequence,2)); % Sort by random ve
 testSequence(:,end) = []; % Trim last column of sorted random numbers;
 
 orientationSequence = 90.*randi([0 3], length(testSequence),1);
-testSequence(:,end+1) = orientationSequence;
+testSequence(:,end
 
 % Save responses and correct/incorrect here (Pre-allocate)
 responseVector = nan(length(testSequence),1);
@@ -352,13 +352,15 @@ while runExperiment == 1 % Experiment loop
         
         % Determine how the E will move
         stimMotionDirection = randi([0 4]);
-        shiftVector = 0:expParameters.MARsizePixels:expParameters.MARsizePixels*(expParameters.testDurationFrames-1);
-        % First, make sure location vectors are set to zero in the Mov
-        % structure
+        slip_values = [0,0.5,1,2];
+        slip_condition = randi(slip_values);
+        MAR_slip = slipcondition*expParameters.MARsizePixels % multiply slip value by MAR size
+        shiftVector = 0:MAR_slip:MAR_slip*(expParameters.testDurationFrames-1);
+        % First, make sure location vectors are set to zero in the Mov structure
         Mov.aom0locx(:) = 0;
         Mov.aom0locy(:) = 0;
         % Now update according to stimMotionDirection
-        if stimMotionDirection == 1 % To the right (we think)
+        if stimMotionDirection == 1 % Rightward motion
             Mov.aom0locx(startFrame:endFrame) = shiftVector;
         elseif stimMotionDirection == 2 % Upward motion
             Mov.aom0locy(startFrame:endFrame) = shiftVector;
