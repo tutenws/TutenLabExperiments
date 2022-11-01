@@ -54,6 +54,67 @@ elseif use_params == 'y'
     load('ExpParams.mat')
 end
 
+% Consolidate test sequence generation here.
+slipLevels = [0 0.5 1 2];
+numGain0 = round(expParameters.nTrials./(2*(length(slipLevels)+0.5))); % For gain 0
+numGain1PerSlip = numGain0.*2; % For each slip
+totalNumberOfTrials = length(slipLevels).*numGain1PerSlip + numGain0;
+% Update num trials in expParameters
+expParameters.nTrials = totalNumberOfTrials;
+
+% Generate the acuity test sequence
+testSequence = [];
+if expParameters.staircase == 0
+   expParameters.numStaircases = 1;
+end
+
+for staircaseNum = 1:expParameters.numStaircases
+    testSequence = [testSequence; repmat(staircaseNum, [expParameters.nTrials 1])]; %#ok<AGROW>
+end
+
+% Orientation Sequence
+quarterTrials = round(expParameters.nTrials./4);
+A=0*ones(1,quarterTrials);
+B=1*ones(1,quarterTrials);
+C=2*ones(1,quarterTrials);
+D=3*ones(1,expParameters.nTrials-(3*quarterTrials));
+orientationSequence = 90.*horzcat(A,B,C,D);
+orientationSequence = orientationSequence(randperm(length(orientationSequence)));
+testSequence(:,end+1) = orientationSequence;
+
+
+% Shuffle the test sequence
+testSequence(:,end+1) = randn(length(testSequence),1); % Add random vector
+testSequence = sortrows(testSequence, size(testSequence,2)); % Sort by random vector to shuffle
+testSequence(:,end) = []; % Trim last column of sorted random numbers;
+
+% Motion Direction Sequence
+E=4*ones(1,quarterTrials);
+stimMotionDirection = horzcat(B,C,D,E);
+stimMotionDirection = stimMotionDirection(randperm(length(stimMotionDirection)));
+
+% Slip Sequence
+slipVector = [nan(1,numGain0) repmat(slipLevels,[1 numGain1PerSlip])];
+gainVector = zeros(size(slipVector));
+gainVector(isfinite(slipVector)) = 1;
+
+% now shuffle both slip condition and gain sequence using the same randperm
+shuffleIndex = randperm(length(slipVector));
+slip_condition = slipVector(shuffleIndex);
+gainseq = gainVector(shuffleIndex);
+% 
+% slip0=0*ones(1,10);
+% sliphalf=0.5*ones(1,20);
+% slip1=1*ones(1,20);
+% slip2=2*ones(1,20);
+% slip_condition = horzcat(slip0,sliphalf,slip1,slip2);
+% slip_condition = slip_condition(randperm(length(slip_condition)));
+
+% % Gain Sequence
+% gain1=1*ones(1,70);
+% gain0=0*ones(1,10);
+% gainseq = horzcat(gain1,gain0);
+% gainseq = gainseq(randperm(length(gainseq)));
 
 
 %------END HARD-CODED PARAMETER SECTION------------------------------------
@@ -179,12 +240,6 @@ aom2offy = zeros(size(aom0seq));
 
 % gainseq = abs(gainseq-1); % Will, not sure
 
-% Gain Sequence
-gain1=1*ones(1,70);
-gain0=0*ones(1,10);
-gainseq = horzcat(gain1,gain0);
-gainseq = gainseq(randperm(length(gainseq))); 
-
 angleseq = zeros(size(aom1seq)); % Tracking "angle", typically stays at zero except for in specific experiments
 stimbeep = zeros(size(aom1seq)); % ICANDI will ding on every frame where this is set to "1"
 stimbeep(startFrame) = 1; % I usually have the system beep on the first frame of the presentation sequence
@@ -218,45 +273,6 @@ StimParams.fprefix = 'frame'; % ICANDI will try to load image files from the sti
 StimParams.sframe = 2; % Index of first loaded frame (i.e. "frame2") 
 StimParams.eframe = 2; % Index of last loaded frame (i.e. "frame4")
 StimParams.fext = 'bmp'; % File extension for stimuli. With the above, ICANDI will load "frame2.bmp", "frame3.bmp", and "frame4.bmp" onto the FPGA; no other files in the
-
-% Generate the acuity test sequence
-testSequence = [];
-if expParameters.staircase == 0
-   expParameters.numStaircases = 1;
-end
-
-for staircaseNum = 1:expParameters.numStaircases
-    testSequence = [testSequence; repmat(staircaseNum, [expParameters.nTrials 1])]; %#ok<AGROW>
-end
-
-
-
-% Orientation Sequence
-A=0*ones(1,22);
-B=1*ones(1,22);
-C=2*ones(1,23);
-D=3*ones(1,23);
-orientationSequence = horzcat(A,B,C,D);
-orientationSequence = orientationSequence(randperm(length(orientationSequence)));
-testSequence(:,end+1) = orientationSequence;
-
-% Shuffle the test sequence
-testSequence(:,end+1) = randn(length(testSequence),1); % Add random vector
-testSequence = sortrows(testSequence, size(testSequence,2)); % Sort by random vector to shuffle
-testSequence(:,end) = []; % Trim last column of sorted random numbers;
-
-% Motion Direction Sequence
-E=4*ones(1,22);
-stimMotionDirection = horzcat(B,C,D,E);
-stimMotionDirection = stimMotionDirection(randperm(length(stimMotionDirection)));
-
-% Slip Sequence
-slip0=0*ones(1,10);
-sliphalf=0.5*ones(1,20);
-slip1=1*ones(1,20);
-slip2=2*ones(1,20);
-slip_condition = horzcat(slip0,sliphalf,slip1,slip2);
-slip_condition = slip_condition(randperm(length(slip_condition)));
 
 % Save responses and correct/incorrect here (Pre-allocate)
 responseVector = nan(length(testSequence),1);
@@ -315,9 +331,9 @@ while runExperiment == 1 % Experiment loop
 
                 % Save the experiment data
                 if expParameters.staircase == 1
-                    save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'slip_condition', 'stimMotionVector');
+                    save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'slip_condition', 'stimMotionVector', 'gainseq');
                 else
-                    save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'slip_condition', 'stimMotionVector');
+                    save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'slip_condition', 'stimMotionVector', 'gainseq');
                 end
 
                      trialNum = trialNum+1;
@@ -377,31 +393,35 @@ while runExperiment == 1 % Experiment loop
         imwrite(testE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
         
         % Determine gain seq
-
+        Mov.gainseq(:) = gainseq(trialNum);
         % Determine how the E will move
         if gainseq(trialNum) == 1
-            MAR_slip = slip_condition*expParameters.MARsizePixels; % multiply slip value by MAR size
+            % Make sure gain sequence in Mov structure is at 1
+            
+            MAR_slip = round(slip_condition(trialNum)*expParameters.MARsizePixels); % multiply slip value by MAR size
             shiftVector = 0:MAR_slip:MAR_slip*(expParameters.testDurationFrames-1);
             % First, make sure location vectors are set to zero in the Mov structure
             Mov.aom0locx(:) = 0;
             Mov.aom0locy(:) = 0;
             % Now update according to stimMotionDirection
-            if stimMotionDirection == 1 % Rightward motion
-                Mov.aom0locx(startFrame:endFrame) = shiftVector;
-            elseif stimMotionDirection == 2 % Upward motion
-                Mov.aom0locy(startFrame:endFrame) = shiftVector;
-            elseif stimMotionDirection == 3 % Leftward motion
-                Mov.aom0locx(startFrame:endFrame) = -shiftVector;
-            elseif stimMotionDirection == 4 % Downward motion
-                Mov.aom0locy(startFrame:endFrame) = -shiftVector;
-            else
-                % Do nothing
+            if ~isempty(shiftVector) % Guards against zero MAR slip error
+                if stimMotionDirection(trialNum) == 1 % Rightward motion
+                    Mov.aom0locx(startFrame:endFrame) = shiftVector;
+                elseif stimMotionDirection(trialNum) == 2 % Upward motion
+                    Mov.aom0locy(startFrame:endFrame) = shiftVector;
+                elseif stimMotionDirection(trialNum) == 3 % Leftward motion
+                    Mov.aom0locx(startFrame:endFrame) = -shiftVector;
+                elseif stimMotionDirection(trialNum) == 4 % Downward motion
+                    Mov.aom0locy(startFrame:endFrame) = -shiftVector;
+                else
+                    % Do nothing
+                end
             end
             % update stim motion vector
             stimMotionVector(trialNum, 1) = stimMotionDirection(trialNum);
-        else 
-            %change gain value to 0
-            Mov.gainseq(:) = gainseq(trialNum);
+%         else 
+%             %change gain value to 0
+%             Mov.gainseq(:) = gainseq(trialNum);
         end
             
         % Call Play Movie
