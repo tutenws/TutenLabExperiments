@@ -344,6 +344,15 @@ while runExperiment == 1 % Experiment loop
                     Beeper(400, 0.5, 0.15); WaitSecs(0.15); Beeper(400, 0.5, 0.15);  WaitSecs(0.15); Beeper(400, 0.5, 0.15);
                     Speak('Experiment complete');
                     TerminateExp;
+                    if expParameters.staircase == 0
+                        % plot & check we're at the right % correct for each run
+                        correct_gain1 = sum(correctVector(slip_condition == 0))/sum(slip_condition == 0);
+                        correct_gain0 = sum(correctVector(gainseq==0))/sum(gainseq==0);
+                        figure, bar([correct_gain0*100, correct_gain1*100])
+                        varnames={'Gain 0'; 'Gain 1'};
+                        set(gca,'xticklabel',varnames);
+                        ylim([0,100])
+                    end
                     break
 %                         if trialNum > expParameters.nTrials
 %                             % Exit the experiment
@@ -494,7 +503,6 @@ while runExperiment == 1 % Experiment loop
         end
     end
 end
-
 
 function startup
 
