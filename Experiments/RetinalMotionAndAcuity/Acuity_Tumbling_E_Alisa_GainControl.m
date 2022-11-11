@@ -329,8 +329,9 @@ while runExperiment == 1 % Experiment loop
                     Speak('Experiment complete');
                     TerminateExp;
                     %show a graph of the staircase
-                    figure, plot(1:expParameters.nTrials, q.intensity(1:expParameters.nTrials))%print the size of the # of pixels the bar should be
-                    
+                    figure, plot(1:expParameters.nTrials, q.intensity(1:expParameters.nTrials));%print the size of the # of pixels the bar should be
+                    print_size = 10^(q.intensity(expParameters.nTrials));
+                    disp(['Staircased 80% threshold MAR letter size ' num2str(print_size) ' pixels per bar. Use this as input for this block of experiments.']);
                     break
 %                         if trialNum > expParameters.nTrials
 %                             % Exit the experiment
