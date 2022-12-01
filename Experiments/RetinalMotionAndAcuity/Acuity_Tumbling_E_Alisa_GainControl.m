@@ -27,7 +27,7 @@ if use_params == 'n'
     expParameters.testDurationMsec = GetWithDefault('Timing: enter duration in msc', 750); % Stimulus duration, in msec
     expParameters.testDurationFrames = round(expParameters.aosloFPS*expParameters.testDurationMsec/1000);
     expParameters.stimulusTrackingGain = GetWithDefault('Gain: 1 = tracking, 0 = natural, 2 = interleaved',1); % Set to "1" for retinal tracking; otherwise set to "0" to deliver "world-fixed" stimuli
-    expParameters.gainLockFlag = 1; % Set to "1" to enable "gain lock" mode where stimuli are initially delivered to a tracked location and then stay put in the raster (see below)
+    expParameters.gainLockFlag = 0; % Set to "1" to enable "gain lock" mode where stimuli are initially delivered to a tracked location and then stay put in the raster (see below)
     expParameters.videoDurationMsec = 1000; % Video duration, in msec
     expParameters.videoDurationFrames = round(expParameters.aosloFPS*(expParameters.videoDurationMsec/1000)); % Convert to frames
     expParameters.record = 1; % Set to one if you want to record a video for each trial
@@ -39,9 +39,9 @@ if use_params == 'n'
     expParameters.nTrials =  GetWithDefault('Number of trials', 100); % Number of trials per staircase or exp
     expParameters.numStaircases = 1; % Interleave staircases? Set to >1
     expParameters.feedbackFlag = 0; % Set to one if you want to provide feedback to the subject
-    expParameters.MARsizePixels =  GetWithDefault('MAR Pixels', 10); % Width in pixels of one bar of the letter E
+    expParameters.MARsizePixels = GetWithDefault('MAR Pixels', 10); % Width in pixels of one bar of the letter E
     expParameters.logMARsizePixels = log10(expParameters.MARsizePixels); % In log units
-    expParameters.MARguesssizePixels =  15; % Width in pixels of one bar of the letter E
+    expParameters.MARguesssizePixels =  12; % Width in pixels of one bar of the letter E
     expParameters.logMARguessPixels = log10(expParameters.MARguesssizePixels); % In log units
     expParameters.tGuessSd = 3; % Width of Bayesian prior, in log units
     expParameters.pThreshold = .8; % If 4AFC, halfway between 100% and guess rate (25%) = .625
@@ -115,10 +115,10 @@ end
 
 % Gain lock section here; need to describe this mode more fully in the
 % comments
-if expParameters.gainLockFlag == 1
+% if expParameters.gainLockFlag == 1
     gainLockCommand = sprintf('Gain0Tracking#%d#',expParameters.gainLockFlag);
     netcomm('write',SYSPARAMS.netcommobj, int8(gainLockCommand));
-end
+% end
 
 % Set up a vector to draw stimulus offsets from
 
@@ -242,7 +242,7 @@ end
 gainSequence = [];
 
 if doInterleave == 1
-    gainSequence = Shuffle([zeros(floor(expParameters.nTrials/2),1); ones(floor(expParameters.nTrials/2),1)]);
+    gainSequence = Shuffle([zeros(floor(expParameters.nTrials/2),1); ones(ceil(expParameters.nTrials/2),1)]);
     if length(gainSequence) ~= length(testSequence)
         lengthFix = length(gainSequence) - length(testSequence);
             if lengthFix < 0 % if gainSeq is longer than testSeq
@@ -315,7 +315,7 @@ while runExperiment == 1 % Experiment loop
                 if expParameters.staircase == 1
                     save(dataFile, 'q', 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector');
                     %for the threshold size
-                    fprintf('MAR = %f\n', 10^q.intensity(expParameters.nTrials))
+                    fprintf('MAR = %f\n', 10^q.intensity(trialNum))
                 else
                     save(dataFile, 'expParameters', 'testSequence', 'correctVector', 'responseVector', 'offsetVector', 'gainSequence');
                 end
@@ -329,9 +329,9 @@ while runExperiment == 1 % Experiment loop
                     Speak('Experiment complete');
                     TerminateExp;
                     %show a graph of the staircase
+                    if expParameters.staircase == 1
                     figure, plot(1:expParameters.nTrials, q.intensity(1:expParameters.nTrials));%print the size of the # of pixels the bar should be
-                    print_size = 10^(q.intensity(expParameters.nTrials));
-                    disp(['Staircased 80% threshold MAR letter size ' num2str(print_size) ' pixels per bar. Use this as input for this block of experiments.']);
+                    end
                     break
 %                         if trialNum > expParameters.nTrials
 %                             % Exit the experiment

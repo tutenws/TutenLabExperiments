@@ -27,7 +27,7 @@ if use_params == 'n'
     expParameters.testDurationMsec = GetWithDefault('Timing: enter duration in msc', 750); % Stimulus duration, in msec
     expParameters.testDurationFrames = round(expParameters.aosloFPS*expParameters.testDurationMsec/1000);
     expParameters.stimulusTrackingGain = 1; % Set later on in the script
-    expParameters.gainLockFlag = 1; % Set to "1" to enable "gain lock" mode where stimuli are initially delivered to a tracked location and then stay put in the raster (see below)
+    expParameters.gainLockFlag = 0; % Set to "1" to enable "gain lock" mode where stimuli are initially delivered to a tracked location and then stay put in the raster (see below)
     expParameters.videoDurationMsec = 1000; % Video duration, in msec
     expParameters.videoDurationFrames = round(expParameters.aosloFPS*(expParameters.videoDurationMsec/1000)); % Convert to frames
     expParameters.record = 1; % Set to one if you want to record a video for each trial
@@ -176,10 +176,10 @@ end
 
 % Gain lock section here; need to describe this mode more fully in the
 % comments
-if expParameters.gainLockFlag == 1
+% if expParameters.gainLockFlag == 1
     gainLockCommand = sprintf('Gain0Tracking#%d#',expParameters.gainLockFlag);
     netcomm('write',SYSPARAMS.netcommobj, int8(gainLockCommand));
-end
+% end
 
 % Set up a vector to draw stimulus offsets from
 
