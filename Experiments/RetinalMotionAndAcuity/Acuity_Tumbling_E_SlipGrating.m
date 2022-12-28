@@ -73,12 +73,11 @@ end
 
 % Orientation Sequence
 halfTrials = round(expParameters.nTrials./2);
-A=0*ones(1,quarterTrials);
-B=1*ones(1,quarterTrials);
-orientationSequence = 90.*horzcat(A,B);
+Orient1 =0*ones(1,halfTrials);
+Orient2 =2*ones(1,halfTrials);
+orientationSequence = 90.*horzcat(Orient1,Orient2); %2 orientations at 0 (A) and 180 (C)
 orientationSequence = orientationSequence(randperm(length(orientationSequence)));
 testSequence(:,end+1) = orientationSequence;
-
 
 % Shuffle the test sequence
 testSequence(:,end+1) = randn(length(testSequence),1); % Add random vector
@@ -86,8 +85,12 @@ testSequence = sortrows(testSequence, size(testSequence,2)); % Sort by random ve
 testSequence(:,end) = []; % Trim last column of sorted random numbers;
 
 % Motion Direction Sequence
-E=4*ones(1,quarterTrials);
-stimMotionDirection = horzcat(B,C,D,E);
+quarterTrials = round(expParameters.nTrials./4);
+Mot1 =1*ones(1,quarterTrials);
+Mot2 =2*ones(1,quarterTrials);
+Mot3 =3*ones(1,quarterTrials);
+Mot4 =4*ones(1,quarterTrials);
+stimMotionDirection = horzcat(Mot1,Mot2,Mot3,Mot4); % 4 motion directions
 stimMotionDirection = stimMotionDirection(randperm(length(stimMotionDirection)));
 
 % Slip Sequence
