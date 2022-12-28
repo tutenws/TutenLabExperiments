@@ -72,12 +72,10 @@ for staircaseNum = 1:expParameters.numStaircases
 end
 
 % Orientation Sequence
-quarterTrials = round(expParameters.nTrials./4);
+halfTrials = round(expParameters.nTrials./2);
 A=0*ones(1,quarterTrials);
 B=1*ones(1,quarterTrials);
-C=2*ones(1,quarterTrials);
-D=3*ones(1,expParameters.nTrials-(3*quarterTrials));
-orientationSequence = 90.*horzcat(A,B,C,D);
+orientationSequence = 90.*horzcat(A,B);
 orientationSequence = orientationSequence(randperm(length(orientationSequence)));
 testSequence(:,end+1) = orientationSequence;
 
@@ -454,7 +452,7 @@ while runExperiment == 1 % Experiment loop
         presentStimulus = 0;
         end
         
-    elseif gamePad.buttonB % E pointing right in ICANDI
+    elseif gamePad.buttonB % Grating pointing right in ICANDI
         if getResponse == 1
             lastResponse = 'right';
             % Once the subject has pressed something other than the
@@ -465,31 +463,13 @@ while runExperiment == 1 % Experiment loop
             presentStimulus = 1;
         end
         
-    elseif gamePad.buttonX % E pointing left in ICANDI
+    elseif gamePad.buttonX % Grating pointing left in ICANDI
         if getResponse == 1
             lastResponse = 'left';
             orientationResp = 180; % Should look to the right if ICANDI is in fundus view
             Beeper(300, 1, 0.15)
             presentStimulus = 1;
-        end
-        
-    elseif gamePad.buttonY % E pointing up
-        if getResponse == 1
-            lastResponse = 'up';
-            orientationResp = 270;
-            Beeper(300, 1, 0.15)
-            presentStimulus = 1;
-        end
-        
-    elseif gamePad.buttonA
-        if getResponse == 1
-            lastResponse = 'down';
-            gamePad.buttonA % E pointing down
-            orientationResp = 90;
-            Beeper(300, 1, 0.15)
-            presentStimulus = 1;
-        end
-        
+        end     
         
     elseif gamePad.buttonRightUpperTrigger || gamePad.buttonRightLowerTrigger %gamePad.buttonStart %redo button
         if getResponse == 1
