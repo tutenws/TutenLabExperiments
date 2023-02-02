@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-TestGrating = imrotate(TestGrating,(45+testSequence(trialNum,2)),'bicubic', 'crop');
-        %% Visual acuity experiment for AOMcontrol
-function Acuity_Tumbling_E_SlipGrating
-=======
 %% Visual acuity experiment for AOMcontrol
->>>>>>> master
+function Acuity_Tumbling_E_SlipGrating
 
 global SYSPARAMS StimParams VideoParams;
 
@@ -78,18 +73,11 @@ for staircaseNum = 1:expParameters.numStaircases
 end
 
 % Orientation Sequence
-<<<<<<< HEAD
 halfTrials1 = ceil(expParameters.nTrials./2);
 halfTrials2 = floor(expParameters.nTrials./2);
 Orient1 =1*ones(1,halfTrials1);
 Orient2 =2*ones(1,halfTrials2);
 orientationSequence = 90.*horzcat(Orient1,Orient2); %2 orientations at 90 (A) and 270 (C)
-=======
-halfTrials = round(expParameters.nTrials./2);
-Orient1 =0*ones(1,halfTrials);
-Orient2 =2*ones(1,halfTrials);
-orientationSequence = 90.*horzcat(Orient1,Orient2); %2 orientations at 0 (A) and 180 (C)
->>>>>>> master
 orientationSequence = orientationSequence(randperm(length(orientationSequence)));
 testSequence(:,end+1) = orientationSequence;
 
@@ -294,14 +282,8 @@ correctVector = responseVector;
 stimMotionVector = responseVector;
 
 % Make the Grating template;
-<<<<<<< HEAD
 Grating = ones(5,5);
 Grating([1 3 5], :, 1) = 0;
-=======
-Grating = zeros(5,5,3);
-Grating([2 4], :, 1) = 1;
-Grating = imresize(Grating, 30, 'nearest');
->>>>>>> master
 
 % Initialize the experiment loop
 presentStimulus = 1;
@@ -414,7 +396,6 @@ while runExperiment == 1 % Experiment loop
             trialNum = expParameters.nTrials;
         end
         
-<<<<<<< HEAD
         TestGrating = imresize(Grating, MARsizePixels, 'nearest');
         SquareMask = ones(size(TestGrating));
         TestGrating = padarray(TestGrating, [1 1], 1, 'both');
@@ -427,28 +408,14 @@ while runExperiment == 1 % Experiment loop
         
         % Save the E as a .bmp
         imwrite(TestGrating, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
-=======
-        Grating = imrotate(imresize(basicE, MARsizePixels, 'nearest' ),testSequence(trialNum,2)); 
-        Grating = padarray(Grating, [1 1], 1, 'both');
-        
-        % Save the E as a .bmp
-        imwrite(Grating, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
->>>>>>> master
         
         % Determine gain seq
         Mov.gainseq(:) = gainseq(trialNum);
         % Determine how the E will move
         if gainseq(trialNum) == 1
-<<<<<<< HEAD
             % Make sure gain sequence in Mov structure is at 1 
             MAR_slip = round(slip_condition(trialNum)*expParameters.MARsizePixels); % multiply slip value by MAR size
             shiftVector = (0:MAR_slip:MAR_slip*(expParameters.testDurationFrames-1))/2;
-=======
-            % Make sure gain sequence in Mov structure is at 1
-            
-            MAR_slip = round(slip_condition(trialNum)*expParameters.MARsizePixels); % multiply slip value by MAR size
-            shiftVector = (0:MAR_slip:MAR_slip*(expParameters.testDurationFrames-1))/2;x
->>>>>>> master
             % First, make sure location vectors are set to zero in the Mov structure
             Mov.aom0locx(:) = 0;
             Mov.aom0locy(:) = 0;
@@ -475,21 +442,11 @@ while runExperiment == 1 % Experiment loop
 %         else 
 %             %change gain value to 0
 %             Mov.gainseq(:) = gainseq(trialNum);
-<<<<<<< HEAD
 
 
 
-         end
-
-        
-        
-        
-        
-        
-=======
         end
-            
->>>>>>> master
+        
         % Call Play Movie
         Parse_Load_Buffers(0);
         Mov.msg = ['Letter size (pixels): ' num2str(MARsizePixels) ...
@@ -508,11 +465,7 @@ while runExperiment == 1 % Experiment loop
         presentStimulus = 0;
         end
         
-<<<<<<< HEAD
     elseif gamePad.buttonB % Grating pointing right in ICANDI %debug change to if from elseif 1/19
-=======
-    elseif gamePad.buttonB % Grating pointing right in ICANDI
->>>>>>> master
         if getResponse == 1
             lastResponse = 'right';
             % Once the subject has pressed something other than the
@@ -570,8 +523,4 @@ else
     fwrite(fid, dummy, 'double');
     fclose(fid);
 end
-<<<<<<< HEAD
 cd ..;
-=======
-cd ..;
->>>>>>> master
